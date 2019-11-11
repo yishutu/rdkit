@@ -2053,13 +2053,13 @@ The molecules have not been sanitized, so it's a good idea to at least update th
 
   >>> for prod in prods:
   ...     prod.UpdatePropertyCache(strict=False)
-  ...
+  ...  
   >>> Chem.MolToSmiles(prods[0],True)
-  'CNC(=O)C(C)C'
+  'CC(C)C(=O)N/C=C1\\C(=O)Nc2ccc3ncsc3c21'
   >>> Chem.MolToSmiles(prods[1],True)
-  'CC(C)C(=O)NC(=N)N'
+  'CC(C)C(=O)N/C=C1\\C(=O)Nc2ccccc21'
   >>> Chem.MolToSmiles(prods[2],True)
-  'CC(C)C(=O)NC=C1C(=O)Nc2ccc3ncsc3c21'
+  'CNC(=O)C(C)C'
 
 
 By default those results come back in a random order (technically the example
@@ -2860,7 +2860,7 @@ List of Available Descriptors
 +-----------------------------------------------------+------------------------------------------------------------+----------+
 |Autocorr2D                                           |New in 2017.09 release. Todeschini and Consoni "Descriptors | C++      |
 |                                                     |from Molecular Geometry" Handbook of Chemoinformatics       |          |
-|                                                     |http://dx.doi.org/10.1002/9783527618279.ch37                |          |
+|                                                     |https://doi.org/10.1002/9783527618279.ch37                  |          |
 +-----------------------------------------------------+------------------------------------------------------------+----------+
 
 
@@ -2883,40 +2883,40 @@ These all require the molecule to have a 3D conformer.
 +-----------------------------------------------------+-------------------------------------------------------------+----------+
 |Radius of gyration                                   |G. A. Arteca "Molecular Shape Descriptors"                   | C++      |
 |                                                     |Reviews in Computational Chemistry vol 9                     |          |
-|                                                     |http://dx.doi.org/10.1002/9780470125861.ch5                  |          |
+|                                                     |https://doi.org/10.1002/9780470125861.ch5                    |          |
 +-----------------------------------------------------+-------------------------------------------------------------+----------+
 |Inertial shape factor                                |Todeschini and Consoni "Descriptors from Molecular Geometry" | C++      |
 |                                                     |Handbook of Chemoinformatics                                 |          |
-|                                                     |http://dx.doi.org/10.1002/9783527618279.ch37                 |          |
+|                                                     |https://doi.org/10.1002/9783527618279.ch37                   |          |
 +-----------------------------------------------------+-------------------------------------------------------------+----------+
 |Eccentricity                                         |G. A. Arteca "Molecular Shape Descriptors"                   | C++      |
 |                                                     |Reviews in Computational Chemistry vol 9                     |          |
-|                                                     |http://dx.doi.org/10.1002/9780470125861.ch5                  |          |
+|                                                     |https://doi.org/10.1002/9780470125861.ch5                    |          |
 +-----------------------------------------------------+-------------------------------------------------------------+----------+
 |Asphericity                                          |A. Baumgaertner, "Shapes of flexible vesicles"               | C++      |
 |                                                     |J. Chem. Phys. 98:7496                                       |          |
 |                                                     |(1993)                                                       |          |
-|                                                     |http://dx.doi.org/10.1063/1.464689                           |          |
+|                                                     |https://doi.org/10.1063/1.464689                             |          |
 +-----------------------------------------------------+-------------------------------------------------------------+----------+
 |Spherocity Index                                     |Todeschini and Consoni "Descriptors from Molecular Geometry" | C++      |
 |                                                     |Handbook of Chemoinformatics                                 |          |
-|                                                     |http://dx.doi.org/10.1002/9783527618279.ch37                 |          |
+|                                                     |https://doi.org/10.1002/9783527618279.ch37                   |          |
 +-----------------------------------------------------+-------------------------------------------------------------+----------+
 |Autocorr3D                                           |New in 2017.09 release. Todeschini and Consoni "Descriptors  | C++      |
 |                                                     |from Molecular Geometry" Handbook of Chemoinformatics        |          |
-|                                                     |http://dx.doi.org/10.1002/9783527618279.ch37                 |          |
+|                                                     |https://doi.org/10.1002/9783527618279.ch37                   |          |
 +-----------------------------------------------------+-------------------------------------------------------------+----------+
 |RDF                                                  |New in 2017.09 release. Todeschini and Consoni "Descriptors  | C++      |
 |                                                     |from Molecular Geometry" Handbook of Chemoinformatics        |          |
-|                                                     |http://dx.doi.org/10.1002/9783527618279.ch37                 |          |
+|                                                     |https://doi.org/10.1002/9783527618279.ch37                   |          |
 +-----------------------------------------------------+-------------------------------------------------------------+----------+
 |MORSE                                                |New in 2017.09 release. Todeschini and Consoni "Descriptors  | C++      |
 |                                                     |from Molecular Geometry" Handbook of Chemoinformatics        |          |
-|                                                     |http://dx.doi.org/10.1002/9783527618279.ch37                 |          |
+|                                                     |https://doi.org/10.1002/9783527618279.ch37                   |          |
 +-----------------------------------------------------+-------------------------------------------------------------+----------+
 |WHIM                                                 |New in 2017.09 release. Todeschini and Consoni "Descriptors  | C++      |
 |                                                     |from Molecular Geometry" Handbook of Chemoinformatics        |          |
-|                                                     |http://dx.doi.org/10.1002/9783527618279.ch37                 |          |
+|                                                     |https://doi.org/10.1002/9783527618279.ch37                   |          |
 |                                                     |                                                             |          |
 |                                                     |**Note** insufficient information is available to exactly    |          |
 |                                                     |reproduce values from DRAGON for these descriptors. We       |          |
@@ -2924,7 +2924,7 @@ These all require the molecule to have a 3D conformer.
 +-----------------------------------------------------+-------------------------------------------------------------+----------+
 |GETAWAY                                              |New in 2017.09 release. Todeschini and Consoni "Descriptors  | C++      |
 |                                                     |from Molecular Geometry" Handbook of Chemoinformatics        |          |
-|                                                     |http://dx.doi.org/10.1002/9783527618279.ch37                 |          |
+|                                                     |https://doi.org/10.1002/9783527618279.ch37                   |          |
 |                                                     |                                                             |          |
 |                                                     |**Note** insufficient information is available to exactly    |          |
 |                                                     |reproduce values from DRAGON for these descriptors. We       |          |
