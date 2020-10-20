@@ -29,22 +29,22 @@ ExternalProject_Add(yaehmop_project
 
 include_directories(${PROJECT_BINARY_DIR}/include)
 link_directories(${PROJECT_BINARY_DIR}/lib)
+link_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/yaehmop_project-build)
 
 set(EHT_PARAM_FILE ${CMAKE_CURRENT_SOURCE_DIR}/yaehmop/tightbind/eht_parms.dat )
 install(FILES ${EHT_PARAM_FILE}
         DESTINATION ${RDKit_ShareDir}/Data
         COMPONENT data)
 
-message("include_dirs: ${PROJECT_BINARY_DIR}/include")
-message("link_dirs: ${PROJECT_BINARY_DIR}/lib")
+message("YAeHMOP include_dirs: ${PROJECT_BINARY_DIR}/include")
+message("YAeHMOP link_dirs: ${PROJECT_BINARY_DIR}/lib ${CMAKE_CURRENT_SOURCE_DIR}/src/yaehmop_project-build")
 
-add_definitions(-DRDKIT_AVALONLIB_BUILD)
-rdkit_library(EHTLib EHTTools.cpp SHARED LINK_LIBRARIES yaehmop_eht GraphMol DataStructs RDGeometryLib RDGeneral )
+rdkit_library(EHTLib EHTTools.cpp SHARED LINK_LIBRARIES yaehmop_eht GraphMol )
+target_compile_definitions(EHTLib PRIVATE RDKIT_EHTLIB_BUILD)
 add_dependencies(EHTLib yaehmop_project)
 rdkit_headers(EHTTools.h DEST GraphMol)
 rdkit_catch_test(testEHTLib1 test1.cpp
-           LINK_LIBRARIES EHTLib yaehmop_eht 
-	   FileParsers SmilesParse GraphMol DataStructs RDGeometryLib RDGeneral)
+           LINK_LIBRARIES EHTLib FileParsers SmilesParse )
 
 if(RDK_BUILD_PYTHON_WRAPPERS)
 add_subdirectory(Wrap)

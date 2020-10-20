@@ -32,8 +32,8 @@ class RDKIT_DEPICTOR_EXPORT DepictException : public std::exception {
  public:
   DepictException(const char *msg) : _msg(msg){};
   DepictException(const std::string msg) : _msg(msg){};
-  const char *message() const { return _msg.c_str(); };
-  ~DepictException() throw(){};
+  const char *what() const noexcept override { return _msg.c_str(); };
+  ~DepictException() noexcept {};
 
  private:
   std::string _msg;
@@ -66,12 +66,12 @@ class RDKIT_DEPICTOR_EXPORT DepictException : public std::exception {
   \param permuteDeg4Nodes - try permuting the drawing order of bonds around
         atoms with four neighbors in order to improve the depiction
 
-  \return ID of the conformation added to the molecule cotaining the
+  \return ID of the conformation added to the molecule containing the
   2D coordinates
 
 */
 RDKIT_DEPICTOR_EXPORT unsigned int compute2DCoords(
-    RDKit::ROMol &mol, const RDGeom::INT_POINT2D_MAP *coordMap = 0,
+    RDKit::ROMol &mol, const RDGeom::INT_POINT2D_MAP *coordMap = nullptr,
     bool canonOrient = false, bool clearConfs = true,
     unsigned int nFlipsPerSample = 0, unsigned int nSamples = 0,
     int sampleSeed = 0, bool permuteDeg4Nodes = false, bool forceRDKit = false);
@@ -89,7 +89,7 @@ RDKIT_DEPICTOR_EXPORT unsigned int compute2DCoords(
   other. The second component is the sum of squares of the
   difference in distance between those in dmat and the generated
   structure.  The user can adjust the relative importance of the two
-  components via a adjustable paramter (see below)
+  components via a adjustable parameter (see below)
 
   ARGUMENTS:
 
@@ -120,13 +120,13 @@ RDKIT_DEPICTOR_EXPORT unsigned int compute2DCoords(
   \param permuteDeg4Nodes - try permuting the drawing order of bonds around
         atoms with four neighbors in order to improve the depiction
 
-  \return ID of the conformation added to the molecule cotaining the
+  \return ID of the conformation added to the molecule containing the
   2D coordinates
 
 
 */
 RDKIT_DEPICTOR_EXPORT unsigned int compute2DCoordsMimicDistMat(
-    RDKit::ROMol &mol, const DOUBLE_SMART_PTR *dmat = 0,
+    RDKit::ROMol &mol, const DOUBLE_SMART_PTR *dmat = nullptr,
     bool canonOrient = true, bool clearConfs = true, double weightDistMat = 0.5,
     unsigned int nFlipsPerSample = 3, unsigned int nSamples = 100,
     int sampleSeed = 25, bool permuteDeg4Nodes = true, bool forceRDKit = false);
@@ -159,7 +159,7 @@ RDKIT_DEPICTOR_EXPORT unsigned int compute2DCoordsMimicDistMat(
 */
 RDKIT_DEPICTOR_EXPORT void generateDepictionMatching2DStructure(
     RDKit::ROMol &mol, const RDKit::ROMol &reference, int confId = -1,
-    RDKit::ROMol *referencePattern = static_cast<RDKit::ROMol *>(0),
+    RDKit::ROMol *referencePattern = static_cast<RDKit::ROMol *>(nullptr),
     bool acceptFailure = false, bool forceRDKit = false);
 
 //! \brief Generate a 2D depiction for a molecule where all or part of
@@ -186,7 +186,7 @@ RDKIT_DEPICTOR_EXPORT void generateDepictionMatching2DStructure(
 */
 RDKIT_DEPICTOR_EXPORT void generateDepictionMatching3DStructure(
     RDKit::ROMol &mol, const RDKit::ROMol &reference, int confId = -1,
-    RDKit::ROMol *referencePattern = 0, bool acceptFailure = false,
+    RDKit::ROMol *referencePattern = nullptr, bool acceptFailure = false,
     bool forceRDKit = false);
 };  // namespace RDDepict
 

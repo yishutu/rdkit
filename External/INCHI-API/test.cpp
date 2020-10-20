@@ -33,7 +33,9 @@ void runblock(const std::vector<ROMol *> &mols, unsigned int count,
               const std::vector<std::string> &keys) {
   for (unsigned int j = 0; j < 200; j++) {
     for (unsigned int i = 0; i < mols.size(); ++i) {
-      if (i % count != idx) continue;
+      if (i % count != idx) {
+        continue;
+      }
       ROMol *mol = mols[i];
       ExtraInchiReturnValues tmp;
       std::string inchi = MolToInchi(*mol, tmp);
@@ -65,13 +67,15 @@ void testMultiThread() {
   std::cerr << "reading molecules" << std::endl;
   std::vector<ROMol *> mols;
   while (!suppl.atEnd() && mols.size() < 100) {
-    ROMol *mol = 0;
+    ROMol *mol = nullptr;
     try {
       mol = suppl.next();
     } catch (...) {
       continue;
     }
-    if (!mol) continue;
+    if (!mol) {
+      continue;
+    }
     mols.push_back(mol);
   }
   std::cerr << "generating reference data" << std::endl;
@@ -98,7 +102,9 @@ void testMultiThread() {
     fut.get();
   }
 
-  for (unsigned int i = 0; i < mols.size(); ++i) delete mols[i];
+  for (auto &mol : mols) {
+    delete mol;
+  }
 
   BOOST_LOG(rdErrorLog) << "  done" << std::endl;
 }
@@ -116,7 +122,7 @@ void testGithubIssue3() {
   {
     std::string fName = getenv("RDBASE");
     fName += "/External/INCHI-API/test_data/github3.mol";
-    ROMol *m = static_cast<ROMol *>(MolFileToMol(fName));
+    auto *m = static_cast<ROMol *>(MolFileToMol(fName));
     TEST_ASSERT(m);
     std::string smi = MolToSmiles(*m, true);
     TEST_ASSERT(smi == "CNC[C@H](O)[C@@H](O)[C@H](O)[C@H](O)CO");
@@ -128,7 +134,7 @@ void testGithubIssue3() {
                 "h4-13H,2-3H2,1H3/t4-,5+,6+,7+/m0/s1");
 
     // blow out the stereo information with a copy:
-    RWMol *m2 = new RWMol(*m);
+    auto *m2 = new RWMol(*m);
     m2->clearComputedProps();
     MolOps::sanitizeMol(*m2);
 
@@ -151,7 +157,7 @@ void testGithubIssue8() {
   {
     std::string fName = getenv("RDBASE");
     fName += "/External/INCHI-API/test_data/github8_extra.mol";
-    ROMol *m = static_cast<ROMol *>(MolFileToMol(fName, true, false));
+    auto *m = static_cast<ROMol *>(MolFileToMol(fName, true, false));
     TEST_ASSERT(m);
 
     ExtraInchiReturnValues tmp;
@@ -270,7 +276,7 @@ void testGithubIssue296() {
   {
     std::string fName = getenv("RDBASE");
     fName += "/External/INCHI-API/test_data/github296.mol";
-    ROMol *m = static_cast<ROMol *>(MolFileToMol(fName));
+    auto *m = static_cast<ROMol *>(MolFileToMol(fName));
     TEST_ASSERT(m);
     ExtraInchiReturnValues tmp;
     std::string inchi = MolToInchi(*m, tmp);
@@ -503,7 +509,6 @@ void testGithubIssue562() {
     TEST_ASSERT(m->getAtomWithIdx(0)->getNoImplicit() == true);
 
     std::string oinchi = MolToInchi(*m, tmp);
-
     TEST_ASSERT(oinchi == inchi);
 
     delete m;
@@ -715,6 +720,63 @@ M  END
   BOOST_LOG(rdInfoLog) << "done" << std::endl;
 }
 
+void testGithub3365() {
+  BOOST_LOG(rdErrorLog) << "-------------------------------------" << std::endl;
+  BOOST_LOG(rdInfoLog)
+      << "testing github #3365: problems with high radical counts" << std::endl;
+
+  {
+    auto m = "[C]"_smiles;
+    TEST_ASSERT(m);
+    TEST_ASSERT(m->getAtomWithIdx(0)->getNumRadicalElectrons() == 4);
+    ExtraInchiReturnValues tmp;
+    std::string inchi = MolToInchi(*m, tmp);
+    TEST_ASSERT(inchi == "InChI=1S/C");
+  }
+  {
+    auto m = "[CH]"_smiles;
+    TEST_ASSERT(m);
+    TEST_ASSERT(m->getAtomWithIdx(0)->getNumRadicalElectrons() == 3);
+    ExtraInchiReturnValues tmp;
+    std::string inchi = MolToInchi(*m, tmp);
+    TEST_ASSERT(inchi == "InChI=1S/CH/h1H");
+  }
+  {
+    auto m = "[CH2]"_smiles;
+    TEST_ASSERT(m);
+    TEST_ASSERT(m->getAtomWithIdx(0)->getNumRadicalElectrons() == 2);
+    ExtraInchiReturnValues tmp;
+    std::string inchi = MolToInchi(*m, tmp);
+    TEST_ASSERT(inchi == "InChI=1S/CH2/h1H2");
+  }
+  {
+    auto m = "[CH3]"_smiles;
+    TEST_ASSERT(m);
+    TEST_ASSERT(m->getAtomWithIdx(0)->getNumRadicalElectrons() == 1);
+    ExtraInchiReturnValues tmp;
+    std::string inchi = MolToInchi(*m, tmp);
+    TEST_ASSERT(inchi == "InChI=1S/CH3/h1H3");
+  }
+  {
+    auto m = "C[SH](C)=O"_smiles;
+    TEST_ASSERT(m);
+    TEST_ASSERT(m->getAtomWithIdx(1)->getNumRadicalElectrons() == 1);
+    ExtraInchiReturnValues tmp;
+    std::string inchi = MolToInchi(*m, tmp);
+    TEST_ASSERT(inchi == "InChI=1S/C2H7OS/c1-4(2)3/h4H,1-2H3");
+  }
+  {
+    auto m = "C[SH](C)(O)O"_smiles;
+    TEST_ASSERT(m);
+    TEST_ASSERT(m->getAtomWithIdx(1)->getNumRadicalElectrons() == 1);
+    ExtraInchiReturnValues tmp;
+    std::string inchi = MolToInchi(*m, tmp);
+    TEST_ASSERT(inchi == "InChI=1S/C2H9O2S/c1-5(2,3)4/h3-5H,1-2H3");
+  }
+
+  BOOST_LOG(rdInfoLog) << "done" << std::endl;
+}
+
 //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 //
 //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -729,9 +791,10 @@ int main() {
   testGithubIssue296();
   testMultiThread();
   testGithubIssue437();
-  testGithubIssue562();
   testGithubIssue614();
   testGithubIssue1572();
-#endif
   testMolBlockToInchi();
+#endif
+  testGithubIssue562();
+  testGithub3365();
 }

@@ -49,6 +49,15 @@ class SparseIntVect {
     initFromText(pkl, len);
   };
 
+  SparseIntVect &operator=(const SparseIntVect<IndexType> &other) {
+    if (this == &other) {
+      return *this;
+    }
+    d_length = other.d_length;
+    d_data.insert(other.d_data.begin(), other.d_data.end());
+    return *this;
+  }
+
   //! destructor (doesn't need to do anything)
   ~SparseIntVect() {}
 
@@ -364,7 +373,7 @@ class SparseIntVect {
       streamRead(ss, tInt);
       if (tInt > sizeof(IndexType)) {
         throw ValueErrorException(
-            "IndexType cannot accomodate index size in SparseIntVect pickle");
+            "IndexType cannot accommodate index size in SparseIntVect pickle");
       }
       switch (tInt) {
         case sizeof(char):
@@ -480,11 +489,8 @@ double DiceSimilarity(const SparseIntVect<IndexType> &v1,
     v2Sum = v2.getTotalVal(true);
     double denom = v1Sum + v2Sum;
     if (fabs(denom) < 1e-6) {
-      if (returnDistance) {
-        return 1.0;
-      } else {
-        return 0.0;
-      }
+      // no need to worry about returnDistance here
+      return 0.0;
     }
     double minV = v1Sum < v2Sum ? v1Sum : v2Sum;
     if (2. * minV / denom < bounds) {

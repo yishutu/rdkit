@@ -58,7 +58,7 @@ TEST_CASE("SKIP_IF_ALL_MATCH") {
   }
 }
 
-TEST_CASE("symmetry in the uncharger", "uncharger") {
+TEST_CASE("symmetry in the uncharger", "[uncharger]") {
   SECTION("case 1") {
     auto m = "C[N+](C)(C)CC(C(=O)[O-])CC(=O)[O-]"_smiles;
     REQUIRE(m);
@@ -92,7 +92,7 @@ TEST_CASE("symmetry in the uncharger", "uncharger") {
   }
 }
 
-TEST_CASE("uncharger bug with duplicates", "uncharger") {
+TEST_CASE("uncharger bug with duplicates", "[uncharger]") {
   SECTION("case 1") {
     auto m = "[NH3+]CC([O-])C[O-]"_smiles;
     REQUIRE(m);
@@ -131,7 +131,7 @@ TEST_CASE("uncharger bug with duplicates", "uncharger") {
 
 TEST_CASE(
     "github #2411: MolStandardize: FragmentRemover should not sanitize "
-    "fragments") {
+    "[fragments]") {
   SECTION("demo") {
     std::string smi = "CN(C)(C)C.Cl";
     bool debugParse = false;
@@ -148,7 +148,7 @@ TEST_CASE(
 
 TEST_CASE(
     "github #2452: incorrectly removing charge from boron anions"
-    "fragments,uncharger") {
+    "[fragments][uncharger]") {
   SECTION("demo") {
     auto m = "C[B-](C)(C)C"_smiles;
     REQUIRE(m);
@@ -173,7 +173,7 @@ TEST_CASE(
   }
 }
 
-TEST_CASE("github #2602: Uncharger ignores dications", "uncharger") {
+TEST_CASE("github #2602: Uncharger ignores dications", "[uncharger]") {
   SECTION("demo") {
     auto m = "[O-]CCC[O-].[Ca+2]"_smiles;
     REQUIRE(m);
@@ -191,7 +191,7 @@ TEST_CASE("github #2602: Uncharger ignores dications", "uncharger") {
 TEST_CASE(
     "github #2605: Uncharger incorrectly neutralizes cations when "
     "non-neutralizable anions are present.",
-    "uncharger") {
+    "[uncharger]") {
   SECTION("demo") {
     auto m = "F[B-](F)(F)F.[NH3+]CCC"_smiles;
     REQUIRE(m);
@@ -229,7 +229,7 @@ TEST_CASE(
 }
 
 TEST_CASE("github #2610: Uncharger incorrectly modifying a zwitterion.",
-          "uncharger") {
+          "[uncharger]") {
   SECTION("demo") {
     auto m = "C1=CC=CC[NH+]1-[O-]"_smiles;
     REQUIRE(m);
@@ -243,7 +243,7 @@ TEST_CASE("github #2610: Uncharger incorrectly modifying a zwitterion.",
   }
 }
 
-TEST_CASE("problems with ringInfo initialization", "normalizer") {
+TEST_CASE("problems with ringInfo initialization", "[normalizer]") {
   std::string tfs =
       R"TXT(Bad amide tautomer1	[C:1]([OH1;D1:2])=;!@[NH1:3]>>[C:1](=[OH0:2])-[NH2:3]
 Bad amide tautomer2	[C:1]([OH1;D1:2])=;!@[NH0:3]>>[C:1](=[OH0:2])-[NH1:3])TXT";
@@ -258,7 +258,7 @@ Bad amide tautomer2	[C:1]([OH1;D1:2])=;!@[NH0:3]>>[C:1](=[OH0:2])-[NH1:3])TXT";
   }
 }
 
-TEST_CASE("segfault in normalizer", "normalizer") {
+TEST_CASE("segfault in normalizer", "[normalizer]") {
   std::string tfs =
       R"TXT(Bad amide tautomer1	[C:1]([OH1;D1:2])=;!@[NH1:3]>>[C:1](=[OH0:2])-[NH2:3]
 Bad amide tautomer2	[C:1]([OH1;D1:2])=;!@[NH0:3]>>[C:1](=[OH0:2])-[NH1:3])TXT";
@@ -386,7 +386,7 @@ M  END
           "[C@H]1C[C@H](O)CN1C");
   }
 }
-TEST_CASE("problems with uncharging HS- from mol file", "normalizer") {
+TEST_CASE("problems with uncharging HS- from mol file", "[normalizer]") {
   SECTION("example1") {
     std::string mb = R"CTAB(
   SciTegic12231509382D
@@ -403,7 +403,7 @@ M  END)CTAB";
   }
 }
 
-TEST_CASE("explicit Hs and Ns when neutralizing", "normalizer") {
+TEST_CASE("explicit Hs and Ns when neutralizing", "[normalizer]") {
   SECTION("example1") {
     std::string molblock = R"CTAB(
   Mrv1810 10301909502D          
@@ -427,4 +427,189 @@ M  END
     // should be no valence markers in the output mol block:
     CHECK(mb.find("0.0000 N   0  0  0  0  0  0") != std::string::npos);
   }
+}
+
+TEST_CASE("fragment remover not considering bond counts", "[fragments][bug]") {
+  std::string salts = R"DATA(Benethamine	C(Cc1ccccc1)NCc2ccccc2
+Chloride	Cl
+)DATA";
+  std::istringstream iss(salts);
+  bool leave_last = false;
+  MolStandardize::FragmentRemover rmv(iss, leave_last);
+
+  SECTION("example that should not be removed") {
+    std::string molblock = R"CTAB(
+  SciTegic11261411092D
+
+ 17 18  0  0  0  0            999 V2000
+    0.0000    0.0000    0.0000 Cl  0  0
+    2.2393    0.5156    0.0000 N   0  0
+    3.6682    0.5156    0.0000 C   0  0
+    2.9538    0.1031    0.0000 C   0  0
+    3.6682    1.3406    0.0000 C   0  0
+    2.9538   -0.7219    0.0000 C   0  0
+    4.3827    0.1031    0.0000 C   0  0
+    2.9538    1.7531    0.0000 C   0  0
+    4.3827    1.7531    0.0000 C   0  0
+    2.2393    1.3406    0.0000 C   0  0
+    3.6682   -1.1344    0.0000 C   0  0
+    2.2393   -1.1344    0.0000 C   0  0
+    5.0972    0.5156    0.0000 C   0  0
+    5.0972    1.3406    0.0000 C   0  0
+    3.6682   -1.9594    0.0000 C   0  0
+    2.2393   -1.9594    0.0000 C   0  0
+    2.9538   -2.3719    0.0000 C   0  0
+  2  4  1  0
+  2 10  1  0
+  3  4  1  0
+  3  5  1  0
+  3  7  2  0
+  4  6  1  0
+  5  8  1  0
+  5  9  2  0
+  6 11  2  0
+  6 12  1  0
+  7 13  1  0
+  8 10  1  0
+  9 14  1  0
+ 11 15  1  0
+ 12 16  2  0
+ 13 14  2  0
+ 15 17  2  0
+ 16 17  1  0
+M  END)CTAB";
+    std::unique_ptr<RWMol> m(MolBlockToMol(molblock));
+    REQUIRE(m);
+    m->updatePropertyCache();
+
+    std::unique_ptr<ROMol> sm(rmv.remove(*m));
+    REQUIRE(sm);
+    CHECK(sm->getNumAtoms() == 16);
+  }
+
+  SECTION("example that should be removed") {
+    std::string molblock = R"CTAB(
+  Mrv1810 11071914502D          
+
+ 17 17  0  0  0  0            999 V2000
+    0.0000    0.0000    0.0000 Cl  0  0  0  0  0  0  0  0  0  0  0  0
+    2.2393    0.5156    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
+    3.6682    0.5156    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    2.9538    0.1031    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    3.6682    1.3406    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    2.9538   -0.7219    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    4.3827    0.1031    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    2.9538    1.7531    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    4.3827    1.7531    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    2.2393    1.3406    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    3.6682   -1.1344    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    2.2393   -1.1344    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    5.0972    0.5156    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    5.0972    1.3406    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    3.6682   -1.9594    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    2.2393   -1.9594    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    2.9538   -2.3719    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  2  4  1  0  0  0  0
+  2 10  1  0  0  0  0
+  3  5  1  0  0  0  0
+  3  7  2  0  0  0  0
+  4  6  1  0  0  0  0
+  5  8  1  0  0  0  0
+  5  9  2  0  0  0  0
+  6 11  2  0  0  0  0
+  6 12  1  0  0  0  0
+  7 13  1  0  0  0  0
+  8 10  1  0  0  0  0
+  9 14  1  0  0  0  0
+ 11 15  1  0  0  0  0
+ 12 16  2  0  0  0  0
+ 13 14  2  0  0  0  0
+ 15 17  2  0  0  0  0
+ 16 17  1  0  0  0  0
+M  END
+)CTAB";
+    std::unique_ptr<RWMol> m(MolBlockToMol(molblock));
+    REQUIRE(m);
+    m->updatePropertyCache();
+
+    std::unique_ptr<ROMol> sm(rmv.remove(*m));
+    REQUIRE(sm);
+    CHECK(sm->getNumAtoms() == 0);
+  }
+}
+
+TEST_CASE("github #2792: carbon in the uncharger", "[uncharger][bug]") {
+  SECTION("carbocation 1") {
+    auto m = "C[CH2+]"_smiles;
+    REQUIRE(m);
+    MolStandardize::Uncharger uncharger;
+    std::unique_ptr<ROMol> outm(uncharger.uncharge(*m));
+    REQUIRE(outm);
+    CHECK(outm->getAtomWithIdx(1)->getFormalCharge() == 0);
+    CHECK(outm->getAtomWithIdx(1)->getTotalNumHs() == 3);
+  }
+  SECTION("boron cation") {
+    auto m = "C[BH+]"_smiles;
+    REQUIRE(m);
+    MolStandardize::Uncharger uncharger;
+    std::unique_ptr<ROMol> outm(uncharger.uncharge(*m));
+    REQUIRE(outm);
+    CHECK(outm->getAtomWithIdx(1)->getFormalCharge() == 0);
+    CHECK(outm->getAtomWithIdx(1)->getTotalNumHs() == 2);
+  }
+  SECTION("carbanion 1") {
+    auto m = "C[CH2-]"_smiles;
+    REQUIRE(m);
+    MolStandardize::Uncharger uncharger;
+    std::unique_ptr<ROMol> outm(uncharger.uncharge(*m));
+    REQUIRE(outm);
+    CHECK(outm->getAtomWithIdx(1)->getFormalCharge() == 0);
+    CHECK(outm->getAtomWithIdx(1)->getTotalNumHs() == 3);
+  }
+  SECTION("carbocation 2") {
+    auto m = "CN1C=CN[CH+]1"_smiles;
+    REQUIRE(m);
+    MolStandardize::Uncharger uncharger;
+    std::unique_ptr<ROMol> outm(uncharger.uncharge(*m));
+    REQUIRE(outm);
+    CHECK(outm->getAtomWithIdx(5)->getFormalCharge() == 0);
+    CHECK(outm->getAtomWithIdx(5)->getTotalNumHs() == 2);
+  }
+  SECTION("carbocation 2 without sanitization") {
+    SmilesParserParams params;
+    params.sanitize = false;
+    std::unique_ptr<ROMol> m(SmilesToMol("CN1C=CN[CH+]1", params));
+    REQUIRE(m);
+    m->updatePropertyCache();
+    MolStandardize::Uncharger uncharger;
+    std::unique_ptr<ROMol> outm(uncharger.uncharge(*m));
+    REQUIRE(outm);
+    CHECK(outm->getAtomWithIdx(5)->getFormalCharge() == 0);
+    CHECK(outm->getAtomWithIdx(5)->getTotalNumHs() == 2);
+  }
+}
+
+TEST_CASE("github #2965: molecules properties not retained after cleanup", "[cleanup][bug]") {
+  SECTION("example 1") {
+	MolStandardize::CleanupParameters params;
+	std::unique_ptr<RWMol> m(SmilesToMol("Cl.c1cnc(OCCCC2CCNCC2)cn1"));
+	REQUIRE(m);
+	m->setProp("testing_prop", "1234");
+	std::unique_ptr<RWMol> res(MolStandardize::cleanup(*m, params));
+        REQUIRE(res);
+	auto x = res->getDict(); 
+	CHECK(x.getVal<std::string>("testing_prop") == "1234");
+  }
+} 
+
+TEST_CASE("github #2970: chargeParent() segmentation fault when standardization is skipped i.e. skip_standardize is set to true") {
+    auto m = "COC=1C=CC(NC=2N=CN=C3NC=NC23)=CC1"_smiles;
+    REQUIRE(m);
+    MolStandardize::CleanupParameters params;
+    std::unique_ptr<RWMol> res(MolStandardize::cleanup(*m, params));
+
+    std::unique_ptr<ROMol> outm(MolStandardize::chargeParent(*res, params, true));
+
+    REQUIRE(outm);
+    CHECK(MolToSmiles(*outm) == "COc1ccc(Nc2ncnc3[nH]cnc23)cc1");
 }

@@ -36,7 +36,7 @@
 //#include <boost/python/suite/indexing/map_indexing_suite.hpp>
 //#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 //#include <string>
-#include <math.h>
+#include <cmath>
 
 #include <RDGeneral/Exceptions.h>
 #include <GraphMol/RDKitBase.h>
@@ -53,10 +53,12 @@ python::object classifyAtomsHelper(RDKit::ROMol &mol,
   std::vector<double> radii;
   python::list l;
   if (FreeSASA::classifyAtoms(mol, radii, opts)) {
-    for (double &i : radii) l.append(i);
-    return l;
+    for (double &i : radii) {
+      l.append(i);
+    }
+    return std::move(l);
   }
-  return l;
+  return std::move(l);
 }
 
 double calcSASAHelper(const RDKit::ROMol &mol, python::object radii,

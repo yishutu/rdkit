@@ -29,9 +29,9 @@ namespace MolShapes {
 //! from the origin
 RDKIT_SHAPEHELPERS_EXPORT void computeConfDimsAndOffset(
     const Conformer &conf, RDGeom::Point3D &dims, RDGeom::Point3D &offSet,
-    const RDGeom::Transform3D *trans = 0, double padding = 2.5);
+    const RDGeom::Transform3D *trans = nullptr, double padding = 2.5);
 
-//! Compute the a box that will fit the confomer
+//! Compute the box that will fit the conformer
 /*!
   \param conf            The conformer of interest
   \param leftBottom      Storage for one extremity of the box
@@ -42,7 +42,7 @@ RDKIT_SHAPEHELPERS_EXPORT void computeConfDimsAndOffset(
 */
 RDKIT_SHAPEHELPERS_EXPORT void computeConfBox(
     const Conformer &conf, RDGeom::Point3D &leftBottom,
-    RDGeom::Point3D &rightTop, const RDGeom::Transform3D *trans = 0,
+    RDGeom::Point3D &rightTop, const RDGeom::Transform3D *trans = nullptr,
     double padding = 2.5);
 
 //! Compute the union of two boxes
@@ -60,7 +60,7 @@ RDKIT_SHAPEHELPERS_EXPORT void computeUnionBox(
 */
 RDKIT_SHAPEHELPERS_EXPORT std::vector<double> getConfDimensions(
     const Conformer &conf, double padding = 2.5,
-    const RDGeom::Point3D *center = 0, bool ignoreHs = true);
+    const RDGeom::Point3D *center = nullptr, bool ignoreHs = true);
 
 //! Compute the shape tversky index between two molecule based on a
 // predefined alignment
@@ -80,7 +80,7 @@ RDKIT_SHAPEHELPERS_EXPORT std::vector<double> getConfDimensions(
   \param vdwScale     Scaling factor for the radius of the atoms to determine
   the base radius
                       used in the encoding - grid points inside this sphere
-  carry the maximum occupany
+  carry the maximum occupancy
   \param stepSize     thickness of the each layer outside the base radius, the
   occupancy value is decreased
                       from layer to layer from the maximum value
@@ -114,7 +114,7 @@ RDKIT_SHAPEHELPERS_EXPORT double tverskyIndex(
   \param vdwScale     Scaling factor for the radius of the atoms to determine
   the base radius
                       used in the encoding - grid points inside this sphere
-  carry the maximum occupany
+  carry the maximum occupancy
   \param stepSize     thickness of the each layer outside the base radius, the
   occupancy value is decreased
                       from layer to layer from the maximum value
@@ -150,7 +150,7 @@ RDKIT_SHAPEHELPERS_EXPORT double tverskyIndex(
   \param vdwScale     Scaling factor for the radius of the atoms to determine
   the base radius
                       used in the encoding - grid points inside this sphere
-  carry the maximum occupany
+  carry the maximum occupancy
   \param stepSize     thickness of the each layer outside the base radius, the
   occupancy value is decreased
                       from layer to layer from the maximum value
@@ -181,7 +181,7 @@ RDKIT_SHAPEHELPERS_EXPORT double tanimotoDistance(
   \param vdwScale     Scaling factor for the radius of the atoms to determine
   the base radius
                       used in the encoding - grid points inside this sphere
-  carry the maximum occupany
+  carry the maximum occupancy
   \param stepSize     thickness of the each layer outside the base radius, the
   occupancy value is decreased
                       from layer to layer from the maximum value
@@ -216,7 +216,7 @@ RDKIT_SHAPEHELPERS_EXPORT double tanimotoDistance(
   \param vdwScale     Scaling factor for the radius of the atoms to determine
   the base radius
                       used in the encoding - grid points inside this sphere
-  carry the maximum occupany
+  carry the maximum occupancy
   \param stepSize     thickness of the each layer outside the base radius, the
   occupancy value is decreased
                       from layer to layer from the maximum value
@@ -251,7 +251,7 @@ RDKIT_SHAPEHELPERS_EXPORT double protrudeDistance(
   \param vdwScale     Scaling factor for the radius of the atoms to determine
   the base radius
                       used in the encoding - grid points inside this sphere
-  carry the maximum occupany
+  carry the maximum occupancy
   \param stepSize     thickness of the each layer outside the base radius, the
   occupancy value is decreased
                       from layer to layer from the maximum value

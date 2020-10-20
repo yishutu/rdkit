@@ -49,6 +49,8 @@ class RDKIT_DATASTRUCTS_EXPORT DiscreteValueVect {
   //! Copy constructor
   DiscreteValueVect(const DiscreteValueVect &other);
 
+  DiscreteValueVect &operator=(const DiscreteValueVect &other);
+
   //! constructor from a pickle
   DiscreteValueVect(const std::string &pkl) {
     initFromText(pkl.c_str(), static_cast<unsigned int>(pkl.size()));
@@ -69,7 +71,7 @@ class RDKIT_DATASTRUCTS_EXPORT DiscreteValueVect {
   //! set the value at an index
   /*!
     NOTE: it is an error to have val > the max value this
-    DiscreteValueVect can accomodate
+    DiscreteValueVect can accommodate
   */
   void setVal(unsigned int i, unsigned int val);
 

@@ -321,12 +321,16 @@ void testTPSA() {
   while (!inf.eof()) {
     std::string inl = getLine(inf);
     boost::trim(inl);
-    if (inl.size() == 0 || inl[0] == '#') continue;
+    if (inl.size() == 0 || inl[0] == '#') {
+      continue;
+    }
     std::vector<std::string> tokens;
     boost::split(tokens, inl, boost::is_any_of(","));
-    if (tokens.size() != 2) continue;
+    if (tokens.size() != 2) {
+      continue;
+    }
     std::string smiles = tokens[0];
-    double oTPSA = boost::lexical_cast<double>(tokens[1]);
+    auto oTPSA = boost::lexical_cast<double>(tokens[1]);
     ROMol *mol = SmilesToMol(smiles);
     TEST_ASSERT(mol);
     double nTPSA = calcTPSA(*mol);
@@ -370,7 +374,9 @@ void testLipinski1() {
     const bool sanitize = true;
     ROMol *test_mol =
         SmilesToMol("CC(C)(C)c1cc(O)c(cc1O)C(C)(C)C", 0, sanitize);
-    if (calcNumRotatableBonds(*test_mol) == 2) rot_prop = NonStrictRotProp;
+    if (calcNumRotatableBonds(*test_mol) == 2) {
+      rot_prop = NonStrictRotProp;
+    }
     delete test_mol;
   }
   while (!suppl.atEnd()) {
@@ -381,7 +387,9 @@ void testLipinski1() {
     } catch (...) {
       continue;
     }
-    if (!mol) continue;
+    if (!mol) {
+      continue;
+    }
 
     unsigned int oVal, nVal;
     std::string foo;
@@ -826,7 +834,9 @@ void runblock(const std::vector<ROMol *> &mols, unsigned int count,
               unsigned int idx) {
   for (unsigned int j = 0; j < 1000; j++) {
     for (unsigned int i = 0; i < mols.size(); ++i) {
-      if (i % count != idx) continue;
+      if (i % count != idx) {
+        continue;
+      }
       ROMol *mol = mols[i];
       int nHBD = calcNumHBD(*mol);
       int nHBA = calcNumHBA(*mol);
@@ -866,7 +876,9 @@ void testMultiThread() {
     } catch (...) {
       continue;
     }
-    if (!mol) continue;
+    if (!mol) {
+      continue;
+    }
     mols.push_back(mol);
   }
   std::vector<std::future<void>> tg;
@@ -881,7 +893,9 @@ void testMultiThread() {
   for (auto &fut : tg) {
     fut.get();
   }
-  for (auto &mol : mols) delete mol;
+  for (auto &mol : mols) {
+    delete mol;
+  }
 
   BOOST_LOG(rdErrorLog) << "  done" << std::endl;
 }
@@ -1531,7 +1545,9 @@ void testMQNs() {
       const bool sanitize = true;
       ROMol *test_mol =
           SmilesToMol("CC(C)(C)c1cc(O)c(cc1O)C(C)(C)C", 0, sanitize);
-      if (calcNumRotatableBonds(*test_mol) == 2) tgt[18] = 26;
+      if (calcNumRotatableBonds(*test_mol) == 2) {
+        tgt[18] = 26;
+      }
       delete test_mol;
     }
     std::vector<unsigned int> accum(42, 0);
@@ -1544,7 +1560,9 @@ void testMQNs() {
       TEST_ASSERT(mol);
       std::vector<unsigned int> v = calcMQNs(*mol);
       TEST_ASSERT(v.size() == 42);
-      for (unsigned int i = 0; i < 42; ++i) accum[i] += v[i];
+      for (unsigned int i = 0; i < 42; ++i) {
+        accum[i] += v[i];
+      }
       delete mol;
     }
     for (unsigned int i = 0; i < 42; ++i) {
@@ -1879,8 +1897,8 @@ void testProperties() {
   }
   {
     std::vector<std::string> names;
-    names.push_back("NumSpiroAtoms");
-    names.push_back("NumBridgeheadAtoms");
+    names.emplace_back("NumSpiroAtoms");
+    names.emplace_back("NumBridgeheadAtoms");
     Properties sink(names);
     std::vector<std::string> sink_names = sink.getPropertyNames();
     TEST_ASSERT(names == sink_names);
@@ -1911,7 +1929,7 @@ void testProperties() {
   {
     try {
       std::vector<std::string> names;
-      names.push_back("FakeName");
+      names.emplace_back("FakeName");
       Properties sink(names);
       TEST_ASSERT(0);  // should throw
     } catch (KeyErrorException &) {
@@ -1959,8 +1977,8 @@ void testStereoCounting() {
   TEST_ASSERT(!m->hasProp(common_properties::_StereochemDone));
 
   std::vector<std::string> names;
-  names.push_back("NumAtomStereoCenters");
-  names.push_back("NumUnspecifiedAtomStereoCenters");
+  names.emplace_back("NumAtomStereoCenters");
+  names.emplace_back("NumUnspecifiedAtomStereoCenters");
   Properties prop(names);
 
   try {
@@ -2174,6 +2192,20 @@ void testGithub1973() {
   BOOST_LOG(rdErrorLog) << "  done" << std::endl;
 }
 
+void testGithub2948() {
+  BOOST_LOG(rdErrorLog) << "-------------------------------------" << std::endl;
+  BOOST_LOG(rdErrorLog)
+      << "    Test Github #2948: Empty molecule has non-zero LabuteASA"
+      << std::endl;
+
+  {
+    ROMol m;
+    auto asa = calcLabuteASA(m);
+    TEST_ASSERT(feq(asa, 0, 0.0001))
+  }
+  BOOST_LOG(rdErrorLog) << "  done" << std::endl;
+}
+
 //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 //
 //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -2216,4 +2248,5 @@ int main() {
   testGithub1702();
 #endif
   testGithub1973();
+  testGithub2948();
 }

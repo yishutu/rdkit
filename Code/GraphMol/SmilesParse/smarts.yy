@@ -26,6 +26,7 @@ namespace {
  void yyErrorCleanup(std::vector<RDKit::RWMol *> *molList){
   for(std::vector<RDKit::RWMol *>::iterator iter=molList->begin();
       iter != molList->end(); ++iter){
+     SmilesParseOps::CleanupAfterParseError(*iter);
      delete *iter;
   }
   molList->clear();
@@ -271,7 +272,7 @@ mol: atomd {
 | mol branch {
   RWMol *m1_p = (*molList)[$$],*m2_p=(*molList)[$2];
   // FIX: handle generic bonds here
-  SmilesParseOps::AddFragToMol(m1_p,m2_p,Bond::UNSPECIFIED,Bond::NONE,false,true);
+  SmilesParseOps::AddFragToMol(m1_p,m2_p,Bond::UNSPECIFIED,Bond::NONE);
   delete m2_p;
   int sz = molList->size();
   if ( sz==$2+1) {
@@ -724,7 +725,13 @@ number:  ZERO_TOKEN
 
 /* --------------------------------------------------------------- */
 nonzero_number:  NONZERO_DIGIT_TOKEN
-| nonzero_number digit { $$ = $1*10 + $2; }
+| nonzero_number digit { 
+    if($1 >= std::numeric_limits<std::int32_t>::max()/10 || 
+     $1*10 >= std::numeric_limits<std::int32_t>::max()-$2 ){
+     yysmarts_error(input,molList,lastAtom,lastBond,scanner,start_token,"number too large");
+     YYABORT;
+  }
+  $$ = $1*10 + $2; }
 ;
 
 digit: NONZERO_DIGIT_TOKEN

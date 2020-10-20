@@ -30,10 +30,8 @@ try:
 except ImportError:
   _canUse3D = False
 
-try:
-  import Image
-except ImportError:
-  from PIL import Image
+from PIL import Image
+from PIL.PngImagePlugin import PngInfo
 
 molSize = (450, 150)
 highlightSubstructs = True
@@ -124,11 +122,9 @@ def _toSVG(mol):
 
 def _toReactionPNG(rxn):
   rc = copy.deepcopy(rxn)
-  img = Draw.ReactionToImage(rc, subImgSize=(int(molSize[0] / 3), molSize[1]),
-                             highlightByReactant=highlightByReactant, drawOptions=drawOptions)
-  bio = BytesIO()
-  img.save(bio, format='PNG')
-  return bio.getvalue()
+  return Draw.ReactionToImage(rc, subImgSize=(int(molSize[0] / 3), molSize[1]),
+                              highlightByReactant=highlightByReactant, drawOptions=drawOptions,
+                              returnPNG=True)
 
 
 def _toReactionSVG(rxn):
@@ -139,8 +135,8 @@ def _toReactionSVG(rxn):
                               highlightByReactant=highlightByReactant, drawOptions=drawOptions)
 
 
-def _GetSubstructMatch(mol, query, **kwargs):
-  res = mol.__GetSubstructMatch(query, **kwargs)
+def _GetSubstructMatch(mol, query, *args, **kwargs):
+  res = mol.__GetSubstructMatch(query, *args, **kwargs)
   if highlightSubstructs:
     mol.__sssAtoms = list(res)
   else:
@@ -151,8 +147,8 @@ def _GetSubstructMatch(mol, query, **kwargs):
 _GetSubstructMatch.__doc__ = rdchem.Mol.GetSubstructMatch.__doc__
 
 
-def _GetSubstructMatches(mol, query, **kwargs):
-  res = mol.__GetSubstructMatches(query, **kwargs)
+def _GetSubstructMatches(mol, query, *args, **kwargs):
+  res = mol.__GetSubstructMatches(query, *args, **kwargs)
   mol.__sssAtoms = []
   if highlightSubstructs:
     for entry in res:
@@ -166,18 +162,26 @@ _GetSubstructMatches.__doc__ = rdchem.Mol.GetSubstructMatches.__doc__
 # code for displaying PIL images directly,
 def display_pil_image(img):
   """displayhook function for PIL Images, rendered as PNG"""
+  # pull metadata from the image, if there
+  metadata = PngInfo()
+  for k, v in img.text.items():
+    metadata.add_text(k, v)
   bio = BytesIO()
-  img.save(bio, format='PNG')
+  img.save(bio, format='PNG', pnginfo=metadata)
   return bio.getvalue()
 
 
 _MolsToGridImageSaved = None
+
+from IPython import display
 
 
 def ShowMols(mols, maxMols=50, **kwargs):
   global _MolsToGridImageSaved
   if 'useSVG' not in kwargs:
     kwargs['useSVG'] = ipython_useSVG
+  if 'returnPNG' not in kwargs:
+    kwargs['returnPNG'] = True
   if _MolsToGridImageSaved is not None:
     fn = _MolsToGridImageSaved
   else:
@@ -194,7 +198,10 @@ def ShowMols(mols, maxMols=50, **kwargs):
   if kwargs['useSVG']:
     return SVG(res)
   else:
-    return res
+    if kwargs['returnPNG']:
+      return display.Image(data=res, format='png')
+    else:
+      return res
 
 
 ShowMols.__doc__ = Draw.MolsToGridImage.__doc__
@@ -281,6 +288,15 @@ DrawRDKitBits.__doc__ = Draw.DrawRDKitBits.__doc__
 _rendererInstalled = False
 
 
+def EnableSubstructMatchRendering():
+  if not hasattr(rdchem.Mol, '__GetSubstructMatch'):
+    rdchem.Mol.__GetSubstructMatch = rdchem.Mol.GetSubstructMatch
+  rdchem.Mol.GetSubstructMatch = _GetSubstructMatch
+  if not hasattr(rdchem.Mol, '__GetSubstructMatches'):
+    rdchem.Mol.__GetSubstructMatches = rdchem.Mol.GetSubstructMatches
+  rdchem.Mol.GetSubstructMatches = _GetSubstructMatches
+
+
 def InstallIPythonRenderer():
   global _MolsToGridImageSaved, _DrawRDKitBitSaved, _DrawRDKitBitsSaved, _DrawMorganBitSaved, _DrawMorganBitsSaved
   global _rendererInstalled
@@ -292,12 +308,7 @@ def InstallIPythonRenderer():
     rdchem.Mol._repr_html_ = _toJSON
   rdChemReactions.ChemicalReaction._repr_png_ = _toReactionPNG
   rdChemReactions.ChemicalReaction._repr_svg_ = _toReactionSVG
-  if not hasattr(rdchem.Mol, '__GetSubstructMatch'):
-    rdchem.Mol.__GetSubstructMatch = rdchem.Mol.GetSubstructMatch
-  rdchem.Mol.GetSubstructMatch = _GetSubstructMatch
-  if not hasattr(rdchem.Mol, '__GetSubstructMatches'):
-    rdchem.Mol.__GetSubstructMatches = rdchem.Mol.GetSubstructMatches
-  rdchem.Mol.GetSubstructMatches = _GetSubstructMatches
+  EnableSubstructMatchRendering()
   Image.Image._repr_png_ = display_pil_image
   _MolsToGridImageSaved = Draw.MolsToGridImage
   Draw.MolsToGridImage = ShowMols
@@ -317,6 +328,15 @@ def InstallIPythonRenderer():
 InstallIPythonRenderer()
 
 
+def DisableSubstructMatchRendering():
+  if hasattr(rdchem.Mol, '__GetSubstructMatch'):
+    rdchem.Mol.GetSubstructMatch = rdchem.Mol.__GetSubstructMatch
+    del rdchem.Mol.__GetSubstructMatch
+  if hasattr(rdchem.Mol, '__GetSubstructMatches'):
+    rdchem.Mol.GetSubstructMatches = rdchem.Mol.__GetSubstructMatches
+    del rdchem.Mol.__GetSubstructMatches
+
+
 def UninstallIPythonRenderer():
   global _MolsToGridImageSaved, _DrawRDKitBitSaved, _DrawMorganBitSaved, _DrawMorganBitsSaved
   global _rendererInstalled
@@ -327,12 +347,7 @@ def UninstallIPythonRenderer():
   if _canUse3D:
     del rdchem.Mol._repr_html_
   del rdChemReactions.ChemicalReaction._repr_png_
-  if hasattr(rdchem.Mol, '__GetSubstructMatch'):
-    rdchem.Mol.GetSubstructMatch = rdchem.Mol.__GetSubstructMatch
-    del rdchem.Mol.__GetSubstructMatch
-  if hasattr(rdchem.Mol, '__GetSubstructMatches'):
-    rdchem.Mol.GetSubstructMatches = rdchem.Mol.__GetSubstructMatches
-    del rdchem.Mol.__GetSubstructMatches
+  DisableSubstructMatchRendering()
   del Image.Image._repr_png_
   if _MolsToGridImageSaved is not None:
     Draw.MolsToGridImage = _MolsToGridImageSaved

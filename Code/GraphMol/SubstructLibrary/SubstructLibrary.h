@@ -38,6 +38,7 @@
 #include <GraphMol/Fingerprints/Fingerprints.h>
 #include <DataStructs/ExplicitBitVect.h>
 #include <DataStructs/BitOps.h>
+#include <GraphMol/MolOps.h>
 
 namespace RDKit {
 
@@ -108,7 +109,7 @@ class RDKIT_SUBSTRUCTLIBRARY_EXPORT CachedMolHolder : public MolHolderBase {
   CachedMolHolder() : MolHolderBase(), mols() {}
 
   virtual unsigned int addMol(const ROMol &m) {
-    mols.push_back(std::string());
+    mols.emplace_back();
     MolPickler::pickleMol(m, mols.back());
     return size() - 1;
   }
@@ -238,6 +239,10 @@ class RDKIT_SUBSTRUCTLIBRARY_EXPORT FPHolderBase {
     for (size_t i = 0; i < fps.size(); ++i) delete fps[i];
   }
 
+  virtual unsigned int size() const {
+    return rdcast<unsigned int>(fps.size());
+  }
+  
   //! Adds a molecule to the fingerprinter
   unsigned int addMol(const ROMol &m) {
     fps.push_back(makeFingerprint(m));
@@ -324,7 +329,9 @@ class RDKIT_SUBSTRUCTLIBRARY_EXPORT PatternHolder : public FPHolderBase {
      a trusted source.  This makes the basic assumption that RDKit was
      used to sanitize and canonicalize the smiles string.  In practice
      this is considerably faster than using arbitrary smiles strings since
-     certain assumptions can be made.
+     certain assumptions can be made.  Molecules generated from trusted
+     smiles do not have ring information (although this is created
+     in the molecule being searched if necessary).
 
      When loading from external data, as opposed to using the "addMol" API,
      care must be taken to ensure that the pattern fingerprints and smiles
@@ -361,17 +368,17 @@ class RDKIT_SUBSTRUCTLIBRARY_EXPORT SubstructLibrary {
   boost::shared_ptr<MolHolderBase> molholder;
   boost::shared_ptr<FPHolderBase> fpholder;
   MolHolderBase *mols;  // used for a small optimization
-  FPHolderBase *fps;
+  FPHolderBase *fps{nullptr};
 
  public:
   SubstructLibrary()
       : molholder(new MolHolder),
         fpholder(),
-        mols(molholder.get()),
-        fps(nullptr) {}
+        mols(molholder.get())
+        {}
 
   SubstructLibrary(boost::shared_ptr<MolHolderBase> molecules)
-      : molholder(molecules), fpholder(), mols(molholder.get()), fps(0) {}
+      : molholder(molecules), fpholder(), mols(molholder.get()), fps(nullptr) {}
 
   SubstructLibrary(boost::shared_ptr<MolHolderBase> molecules,
                    boost::shared_ptr<FPHolderBase> fingerprints)

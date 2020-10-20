@@ -55,7 +55,7 @@ class RDKIT_DATASTRUCTS_EXPORT MultiFPBReader {
  public:
   typedef boost::tuple<double, unsigned int, unsigned int> ResultTuple;
   MultiFPBReader()
-      : df_init(false), df_initOnSearch(false), df_takeOwnership(false){};
+       {};
 
   /*!
     \param initOnSearch: if this is true, the \c init() method on child readers
@@ -86,7 +86,7 @@ class RDKIT_DATASTRUCTS_EXPORT MultiFPBReader {
 
   //! Read the data from the file and initialize internal data structures
   /*!
-  This must be called before most of the other methods of this clases.
+  This must be called before most of the other methods of this class.
   It calls the \c init() method on each of the child FPBReaders
 
   */
@@ -198,7 +198,7 @@ class RDKIT_DATASTRUCTS_EXPORT MultiFPBReader {
 
  private:
   std::vector<FPBReader *> d_readers;
-  bool df_init, df_initOnSearch, df_takeOwnership;
+  bool df_init{false}, df_initOnSearch{false}, df_takeOwnership{false};
 
   // disable automatic copy constructors and assignment operators
   // for this class and its subclasses.  They will likely be

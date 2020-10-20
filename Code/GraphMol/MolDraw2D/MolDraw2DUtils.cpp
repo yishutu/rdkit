@@ -16,7 +16,6 @@
 #include <GraphMol/FileParsers/MolFileStereochem.h>
 
 #include <RDGeneral/BoostStartInclude.h>
-#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -33,8 +32,8 @@ bool isAtomCandForChiralH(const RWMol &mol, const Atom *atom) {
   // conditions for needing a chiral H:
   //   - stereochem specified
   //   - in at least two rings
-  if ((!mol.getRingInfo()->isInitialized() ||
-       mol.getRingInfo()->numAtomRings(atom->getIdx()) > 1) &&
+  if (mol.getRingInfo()->isInitialized() &&
+      mol.getRingInfo()->numAtomRings(atom->getIdx()) > 1 &&
       (atom->getChiralTag() == Atom::CHI_TETRAHEDRAL_CCW ||
        atom->getChiralTag() == Atom::CHI_TETRAHEDRAL_CW)) {
     return true;
@@ -46,19 +45,24 @@ bool isAtomCandForChiralH(const RWMol &mol, const Atom *atom) {
 void prepareMolForDrawing(RWMol &mol, bool kekulize, bool addChiralHs,
                           bool wedgeBonds, bool forceCoords) {
   if (kekulize) {
-    MolOps::Kekulize(mol, false);  // kekulize, but keep the aromatic flags!
+    try {
+      MolOps::Kekulize(mol, false);  // kekulize, but keep the aromatic flags!
+    } catch (const RDKit::AtomKekulizeException &e) {
+      BOOST_LOG(rdInfoLog) << e.what() << std::endl;
+    }
   }
   if (addChiralHs) {
     std::vector<unsigned int> chiralAts;
-    for (RWMol::AtomIterator atIt = mol.beginAtoms(); atIt != mol.endAtoms();
-         ++atIt) {
-      if (isAtomCandForChiralH(mol, *atIt)) {
-        chiralAts.push_back((*atIt)->getIdx());
+    for (auto atom : mol.atoms()) {
+      if (isAtomCandForChiralH(mol, atom)) {
+        chiralAts.push_back(atom->getIdx());
       }
     }
     if (chiralAts.size()) {
       bool addCoords = false;
-      if (!forceCoords && mol.getNumConformers()) addCoords = true;
+      if (!forceCoords && mol.getNumConformers()) {
+        addCoords = true;
+      }
       MolOps::addHs(mol, false, addCoords, &chiralAts);
     }
   }
@@ -82,9 +86,13 @@ void prepareAndDrawMolecule(MolDraw2D &drawer, const ROMol &mol,
                             int confId) {
   RWMol cpy(mol);
   prepareMolForDrawing(cpy);
+  // having done the prepare, we don't want to do it again in drawMolecule.
+  bool old_prep_mol = drawer.drawOptions().prepareMolsBeforeDrawing;
+  drawer.drawOptions().prepareMolsBeforeDrawing = false;
   drawer.drawMolecule(cpy, legend, highlight_atoms, highlight_bonds,
                       highlight_atom_map, highlight_bond_map, highlight_radii,
                       confId);
+  drawer.drawOptions().prepareMolsBeforeDrawing = old_prep_mol;
 }
 
 void updateDrawerParamsFromJSON(MolDraw2D &drawer, const char *json) {
@@ -96,7 +104,9 @@ void updateDrawerParamsFromJSON(MolDraw2D &drawer, const char *json) {
 void get_colour_option(boost::property_tree::ptree *pt, const char *pnm,
                        DrawColour &colour) {
   PRECONDITION(pnm && strlen(pnm), "bad property name");
-  if (pt->find(pnm) == pt->not_found()) return;
+  if (pt->find(pnm) == pt->not_found()) {
+    return;
+  }
 
   boost::property_tree::ptree::const_iterator itm = pt->get_child(pnm).begin();
   colour.r = itm->second.get_value<float>();
@@ -108,7 +118,9 @@ void get_colour_option(boost::property_tree::ptree *pt, const char *pnm,
 }
 
 void updateDrawerParamsFromJSON(MolDraw2D &drawer, const std::string &json) {
-  if (json == "") return;
+  if (json == "") {
+    return;
+  }
   std::istringstream ss;
   ss.str(json);
   MolDrawOptions &opts = drawer.drawOptions();
@@ -118,19 +130,42 @@ void updateDrawerParamsFromJSON(MolDraw2D &drawer, const std::string &json) {
   PT_OPT_GET(dummiesAreAttachments);
   PT_OPT_GET(circleAtoms);
   PT_OPT_GET(continuousHighlight);
+  PT_OPT_GET(fillHighlights);
+  PT_OPT_GET(highlightRadius);
   PT_OPT_GET(flagCloseContactsDist);
   PT_OPT_GET(includeAtomTags);
   PT_OPT_GET(clearBackground);
   PT_OPT_GET(legendFontSize);
+  PT_OPT_GET(maxFontSize);
+  PT_OPT_GET(minFontSize);
+  PT_OPT_GET(annotationFontScale);
+  PT_OPT_GET(fontFile);
   PT_OPT_GET(multipleBondOffset);
   PT_OPT_GET(padding);
   PT_OPT_GET(additionalAtomLabelPadding);
+  PT_OPT_GET(bondLineWidth);
+  PT_OPT_GET(scaleBondWidth);
+  PT_OPT_GET(scaleHighlightBondWidth);
+  PT_OPT_GET(highlightBondWidthMultiplier);
+  PT_OPT_GET(prepareMolsBeforeDrawing);
+  PT_OPT_GET(fixedScale);
+  PT_OPT_GET(fixedBondLength);
+  PT_OPT_GET(rotate);
+  PT_OPT_GET(addAtomIndices);
+  PT_OPT_GET(addBondIndices);
+  PT_OPT_GET(addStereoAnnotation);
+  PT_OPT_GET(atomHighlightsAreCircles);
+  PT_OPT_GET(centreMoleculesBeforeDrawing);
+  PT_OPT_GET(explicitMethyl);
+  PT_OPT_GET(includeMetadata);
+  PT_OPT_GET(includeRadicals);
+
   get_colour_option(&pt, "highlightColour", opts.highlightColour);
   get_colour_option(&pt, "backgroundColour", opts.backgroundColour);
   get_colour_option(&pt, "legendColour", opts.legendColour);
+  get_colour_option(&pt, "symbolColour", opts.symbolColour);
   if (pt.find("atomLabels") != pt.not_found()) {
-    BOOST_FOREACH (boost::property_tree::ptree::value_type const &item,
-                   pt.get_child("atomLabels")) {
+    for (const auto &item : pt.get_child("atomLabels")) {
       opts.atomLabels[boost::lexical_cast<int>(item.first)] =
           item.second.get_value<std::string>();
     }
@@ -141,7 +176,7 @@ void contourAndDrawGrid(MolDraw2D &drawer, const double *grid,
                         const std::vector<double> &xcoords,
                         const std::vector<double> &ycoords, size_t nContours,
                         std::vector<double> &levels,
-                        const ContourParams &params) {
+                        const ContourParams &params, const ROMol *mol) {
   PRECONDITION(grid, "no data");
   PRECONDITION(params.colourMap.size() > 1,
                "colourMap must have at least two entries");
@@ -149,7 +184,7 @@ void contourAndDrawGrid(MolDraw2D &drawer, const double *grid,
   if (params.setScale) {
     Point2D minP = {xcoords[0], ycoords[0]};
     Point2D maxP = {xcoords.back(), ycoords.back()};
-    drawer.setScale(drawer.width(), drawer.height(), minP, maxP);
+    drawer.setScale(drawer.width(), drawer.height(), minP, maxP, mol);
   }
 
   size_t nX = xcoords.size();
@@ -170,7 +205,9 @@ void contourAndDrawGrid(MolDraw2D &drawer, const double *grid,
       }
     }
   }
-  if (maxV <= minV) return;
+  if (maxV <= minV) {
+    return;
+  }
 
   const auto olw = drawer.lineWidth();
   const auto odash = drawer.dash();
@@ -183,10 +220,11 @@ void contourAndDrawGrid(MolDraw2D &drawer, const double *grid,
     auto delta = (maxV - minV);
     if (params.colourMap.size() > 2) {
       // need to find how fractionally far we are from zero, not the min
-      if (-minV > maxV)
+      if (-minV > maxV) {
         delta = -minV;
-      else
+      } else {
         delta = maxV;
+      }
     }
     for (size_t i = 0; i < nX - 1; ++i) {
       for (size_t j = 0; j < nY - 1; ++j) {
@@ -195,9 +233,10 @@ void contourAndDrawGrid(MolDraw2D &drawer, const double *grid,
         if (params.colourMap.size() > 2) {
           // need to find how fractionally far we are from zero, not the min
           fracV = gridV / delta;
-          if (fracV < 0) fracV *= -1;
+          if (fracV < 0) {
+            fracV *= -1;
+          }
         }
-        DrawColour fillColour;
         auto c1 = (gridV < 0 || params.colourMap.size() == 2)
                       ? params.colourMap[1]
                       : params.colourMap[1];
@@ -219,8 +258,9 @@ void contourAndDrawGrid(MolDraw2D &drawer, const double *grid,
   }
 
   if (nContours) {
-    if(nContours > levels.size()){
-      throw ValueErrorException("nContours larger than the size of the level list");
+    if (nContours > levels.size()) {
+      throw ValueErrorException(
+          "nContours larger than the size of the level list");
     }
     std::vector<conrec::ConrecSegment> segs;
     conrec::Contour(grid, 0, nX - 1, 0, nY - 1, xcoords.data(), ycoords.data(),
@@ -251,7 +291,7 @@ void contourAndDrawGaussians(MolDraw2D &drawer,
                              const std::vector<double> &weights,
                              const std::vector<double> &widths,
                              size_t nContours, std::vector<double> &levels,
-                             const ContourParams &params) {
+                             const ContourParams &params, const ROMol *mol) {
   PRECONDITION(locs.size() == weights.size(), "size mismatch");
   PRECONDITION(locs.size() == widths.size(), "size mismatch");
 
@@ -282,7 +322,7 @@ void contourAndDrawGaussians(MolDraw2D &drawer,
       maxP.y += pad;
     }
 
-    drawer.setScale(drawer.width(), drawer.height(), minP, maxP);
+    drawer.setScale(drawer.width(), drawer.height(), minP, maxP, mol);
   }
 
   size_t nx = (size_t)ceil(drawer.range().x / params.gridResolution) + 1;

@@ -29,7 +29,7 @@ namespace MolShapes {
   \param vdwScale  Scaling factor for the radius of the atoms to determine the
   base radius
                    used in the encoding - grid points inside this sphere carry
-  the maximum occupany
+  the maximum occupancy
   \param stepSize  thickness of the layers outside the base radius, the
   occupancy value is decreased
                    from layer to layer from the maximum value
@@ -42,7 +42,7 @@ namespace MolShapes {
 */
 RDKIT_SHAPEHELPERS_EXPORT void EncodeShape(
     const ROMol &mol, RDGeom::UniformGrid3D &grid, int confId = -1,
-    const RDGeom::Transform3D *trans = 0, double vdwScale = 0.8,
+    const RDGeom::Transform3D *trans = nullptr, double vdwScale = 0.8,
     double stepSize = 0.25, int maxLayers = -1, bool ignoreHs = true);
 
 //! Emcode the shape of a conformer on to a grid
@@ -53,7 +53,7 @@ RDKIT_SHAPEHELPERS_EXPORT void EncodeShape(
   \param vdwScale  Scaling factor for the radius of the atoms to determine the
   base radius
                    used in the encoding - grid points inside this sphere carry
-  the maximum occupany
+  the maximum occupancy
   \param stepSize  thickness of the layers outside the base radius, the
   occupancy value is decreased
                    from layer to layer from the maximum value
@@ -66,7 +66,7 @@ RDKIT_SHAPEHELPERS_EXPORT void EncodeShape(
 */
 RDKIT_SHAPEHELPERS_EXPORT void EncodeShape(
     const Conformer &conf, RDGeom::UniformGrid3D &grid,
-    const RDGeom::Transform3D *trans = 0, double vdwScale = 0.8,
+    const RDGeom::Transform3D *trans = nullptr, double vdwScale = 0.8,
     double stepSize = 0.25, int maxLayers = -1, bool ignoreHs = true);
 }  // namespace MolShapes
 }  // namespace RDKit

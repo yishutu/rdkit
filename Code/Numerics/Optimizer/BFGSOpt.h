@@ -8,7 +8,7 @@
 //  of the RDKit source tree.
 //
 #include <RDGeneral/export.h>
-#include <math.h>
+#include <cmath>
 #include <RDGeneral/Invariant.h>
 #include <GraphMol/Trajectory/Snapshot.h>
 #include <cstring>
@@ -26,7 +26,7 @@ const int MAXITS = 200;   //!< Default maximum number of iterations
 const double EPS = 3e-8;  //!< Default gradient tolerance in the minimizer
 const double TOLX =
     4. * EPS;  //!< Default direction vector tolerance in the minimizer
-const double MAXSTEP = 100.0;  //!< Default maximim step size in the minimizer
+const double MAXSTEP = 100.0;  //!< Default maximum step size in the minimizer
 
 //! Do a Quasi-Newton minimization along a line.
 /*!
@@ -251,7 +251,7 @@ int minimize(unsigned int dim, double *pos, double gradTol,
       if (snapshotVect && snapshotFreq) {
         RDKit::Snapshot s(boost::shared_array<double>(newPos), fp);
         snapshotVect->push_back(s);
-        newPos = NULL;
+        newPos = nullptr;
       }
       CLEANUP();
       return 0;
@@ -275,7 +275,7 @@ int minimize(unsigned int dim, double *pos, double gradTol,
       if (snapshotVect && snapshotFreq) {
         RDKit::Snapshot s(boost::shared_array<double>(newPos), fp);
         snapshotVect->push_back(s);
-        newPos = NULL;
+        newPos = nullptr;
       }
       CLEANUP();
       return 0;
@@ -382,8 +382,8 @@ int minimize(unsigned int dim, double *pos, double gradTol,
              unsigned int &numIters, double &funcVal, EnergyFunctor func,
              GradientFunctor gradFunc, double funcTol = TOLX,
              unsigned int maxIts = MAXITS) {
-  return minimize(dim, pos, gradTol, numIters, funcVal, func, gradFunc, 0, NULL,
-                  funcTol, maxIts);
+  return minimize(dim, pos, gradTol, numIters, funcVal, func, gradFunc, 0,
+                  nullptr, funcTol, maxIts);
 }
 
 }  // namespace BFGSOpt

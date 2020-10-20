@@ -84,7 +84,7 @@ ps_font_map = {
 
 
 class PDFCanvas(Canvas):
-    """This works by accumulating a list of strings containing 
+    """This works by accumulating a list of strings containing
       PDF page marking operators, as you call its methods.  We could
       use a big string but this is more efficient - only concatenate
       it once, with control over line ends.  When
@@ -230,8 +230,8 @@ class PDFCanvas(Canvas):
         """PDF escapes are like Python ones, but brackets need slashes before them too.
             Use Python's repr function and chop off the quotes first"""
         s = repr(s)[1:-1]
-        s = s.replace('(', '\(')
-        s = s.replace(')', '\)')
+        s = s.replace('(', r'\(')
+        s = s.replace(')', r'\)')
         return s
 
     def resetDefaults(self):
@@ -467,7 +467,7 @@ class PDFCanvas(Canvas):
     def drawArc(self, x1, y1, x2, y2, startAng=0, extent=90, edgeColor=None, edgeWidth=None,
                 fillColor=None, dash=None, **kwargs):
         """This draws a PacMan-type shape connected to the centre.  One
-            idiosyncracy - if you specify an edge color, it apples to the
+            idiosyncrasy - if you specify an edge color, it apples to the
             outer curved rim but not the radial edges."""
         if edgeColor:
             self._updateLineColor(edgeColor)

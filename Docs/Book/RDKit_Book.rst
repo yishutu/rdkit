@@ -205,7 +205,7 @@ while the Cu has a valence of 4:
   4
 
 Ring closures
-------------
+-------------
 
 ``%(N)`` notation is supported for ring closures, where N is a single digit ``%(N)`` up to
 five digits ``%(NNNNN)``. Here is an example:
@@ -231,13 +231,19 @@ The RDKit supports parsing and writing a subset of the extended SMILES functiona
 
 The features which are parsed include:
 
-- atomic coordinates
-- atomic values
-- atomic labels
-- atomic properties
-- coordinate bonds (these are translated into double bonds)
-- radicals
+- atomic coordinates ``()``
+- atomic values ``$_AV:``
+- atomic labels/aliases ``$`` (recognized aliases are ``_AP``, ``star_e``,
+  ``Q_e``, ``QH_p``, ``AH_P``, ``X_p``, ``XH_p``, ``M_p``, ``MH_p``, ``*``)
+- atomic properties ``atomprop``
+- coordinate bonds ``C`` (these are translated into double bonds)
+- radicals ``^``
 - enhanced stereo (these are converted into ``StereoGroups``)
+- linknodes ``LN``
+- multi-center attachments ``m``
+- ring bond count specifications ``rb``
+- non-hydrogen substitution count specifications ``s``
+- unsaturation specification ``u``
 
 The features which are written by :py:func:`rdkit.Chem.rdmolfiles.MolToCXSmiles`
 (note the specialized writer function) include:
@@ -351,33 +357,34 @@ Please ignore those characters.
 
 **Atoms**
 
-=========  =========================================  ===============  ======  =========
-Primitive                  Property                   "Default value"  Range?    Notes
-=========  =========================================  ===============  ======  =========
-a          "aromatic atom"
-A          "aliphatic atom"
-D          "explicit degree"                          1                Y
-h          "number of implicit hs"                    >0               Y
-H          "total number of Hs"                       1
-r          "in SSSR ring of size"                     >0               Y
-R          "number of SSSR rings"                     >0               Y
-v          "total valence"                            1                Y
-x          "number of ring bonds"                     >0               Y
-X          "total degree"                             1                Y
-z          "number of heteroatom neighbors"           >0               Y       extension
-Z          "number of alphatic heteroatom neighbors"  >0               Y       extension
+=========  ==========================================  ===============  ======  =========
+Primitive                  Property                    "Default value"  Range?    Notes
+=========  ==========================================  ===============  ======  =========
+a          "aromatic atom" 
+A          "aliphatic atom" 
+d          "non-hydrogen degree"                       1                Y       extension
+D          "explicit degree"                           1                Y
+h          "number of implicit hs"                     >0               Y
+H          "total number of Hs"                        1
+r          "size of smallest SSSR ring"                >0               Y
+R          "number of SSSR rings"                      >0               Y
+v          "total valence"                             1                Y
+x          "number of ring bonds"                      >0               Y
+X          "total degree"                              1                Y
+z          "number of heteroatom neighbors"            >0               Y       extension
+Z          "number of aliphatic heteroatom neighbors"  >0               Y       extension
 \*         "any atom"
-\+         "positive charge"                          1                Y 
+\+         "positive charge"                           1                Y
 ++         "+2 charge"
-\-         "negative charge"                          1                Y
+\-         "negative charge"                           1                Y
 \--        "-2 charge"
-^0         "S hybridized"                             n/a              N       extension
-^1         "SP hybridized"                            n/a              N       extension
-^2         "SP2 hybridized"                           n/a              N       extension
-^3         "SP3 hybridized"                           n/a              N       extension
-^4         "SP3D hybridized"                          n/a              N       extension
-^5         "SP3D2 hybridized"                         n/a              N       extension
-=========  =========================================  ===============  ======  =========
+^0         "S hybridized"                              n/a              N       extension
+^1         "SP hybridized"                             n/a              N       extension
+^2         "SP2 hybridized"                            n/a              N       extension
+^3         "SP3 hybridized"                            n/a              N       extension
+^4         "SP3D hybridized"                           n/a              N       extension
+^5         "SP3D2 hybridized"                          n/a              N       extension
+=========  ==========================================  ===============  ======  =========
 
 
 
@@ -400,7 +407,30 @@ Primitive        Property               Notes
 =========  ====================  ===================
 
 
+Mol/SDF Support and Extensions
+==============================
 
+The RDKit covers an extensive subset of the features in the V2000 and V3000 CTAB specfication.
+This subset should be better documented.
+
+Here are the non-element atom queries that are supported:
+  - A: any heavy atom
+  - Q: any non-carbon heavy atom
+  - \*: unspecfied (interpreted as any atom)
+  - L: (v2000): atom list
+  - AH: (ChemAxon Extension) any atom
+  - QH: (ChemAxon Extension) any non-carbon atom
+  - X: (ChemAxon Extension) halogen
+  - XH: (ChemAxon Extension) halogen or hydrogen
+  - M: (ChemAxon Extension) metal ("contains alkali metals, alkaline earth metals, transition 
+        metals, actinides, lanthanides, poor(basic) metals, Ge, Sb, and Po")
+  - MH: (ChemAxon Extension) metal or hydrogen
+
+
+Here's a partial list of the features that are supported:
+  - enhanced stereochemistry (V3000 only)
+  - Sgroups: Sgroups are read and written, but interpretation of their contents is still very much
+    a work in progress
 
 Ring Finding and SSSR
 =====================
@@ -417,6 +447,134 @@ Because it is sometimes useful to be able to count how many SSSR rings are prese
 For situations where you just care about knowing whether or not atoms/bonds are in rings, the RDKit provides the function
 :py:func:`rdkit.Chem.rdmolops.FastFindRings`. This does a depth-first traversal of the molecule graph and identifies atoms and bonds that
 are in rings.
+
+Stereochemistry
+===============
+
+Types of stereochemistry supported
+----------------------------------
+
+The RDKit currently supports tetrahedral atomic stereochemistry and cis/trans
+stereochemistry at double bonds. We plan to add support for additional types of
+stereochemistry in the future.
+
+Identification of potential stereoatoms/stereobonds
+---------------------------------------------------
+
+As of the 2020.09 release the RDKit has two different ways of identifying potential stereoatoms/stereobonds:
+
+   1. The legacy approach: ``AssignStereochemistry()``.
+      This approach does a reasonable job of recognizing potential
+      stereocenters, including some para-stereochemistry. It also has the side
+      effect of assigning approximate CIP labels to the atoms/bonds (see below).
+      This is currently the default algorithm.
+   2. The new approach: ``FindPotentialStereo()``.
+      The new approach is both more accurate (particularly for
+      para-stereochemistry) and faster. It will become the default in a future
+      RDKit version.
+
+A concrete example of the accuracy improvements arising from the new algorithm:
+
+.. |parastereo1| image:: images/parastereo_1.png
+   :align: middle
+.. |parastereo2| image:: images/parastereo_2.png
+   :align: middle
+
++---------------+---------------+
+| |parastereo2| + |parastereo1| |
++---------------+---------------+
+
+Both algorithms recognize that the central carbon is a potential stereocenter in
+the molecule on the left, but the old algorithm is unable to recognize it as a
+potential stereocenter in the molecule on the right.
+
+
+Assignment of absolute stereochemistry
+--------------------------------------
+
+As of the 2020.09 release the RDKit has two different ways of assigning absolute
+stereochemistry labels (CIP labels):
+
+   1. The legacy approach uses an adaptation of an approximate algorithm for
+      assigning CIP codes published by Paul Labute, [#labutecip]_. The algorithm
+      is reliable for determining whether or not a particular specified
+      stereoatom/stereobond actually is a stereoatom/stereobond, but the CIP
+      codes which it assigns are only truly correct for simple examples. As of
+      the 2020.09 release this is the default algorithm, but this will be
+      changed in a future RDKit release. 
+   2. The new approach uses an implementation of a much more accurate algorithm, 
+      [#newcip]_. The new algorithm is more computationally expensive than the
+      old one and does not provide CIP rankings of atoms (the concept of a
+      global ranking of atoms isn't well defined within the context of the true
+      CIP algorithm). If you're interested in having a chirality-sensitive
+      ranking of all atoms, you can use the canonical atom ranking code instead.
+
+
+Stereogenic atoms/bonds
+-----------------------
+
+The definitions of potential stereogenic atoms or bonds is inspired by the InChI definitions.
+
+Stereogenic bonds
+^^^^^^^^^^^^^^^^^
+
+A double bond is potentially stereogenic if both atoms have at least two heavy
+atom neighbors and it's not present in a ring with less than eight atoms.
+
+.. |psdb1| image:: images/potential_stereo_double_bond1.png
+   :align: middle
+.. |psdb2| image:: images/potential_stereo_double_bond2.png
+   :align: middle
+
+For example, both of these double bonds are candidates for stereochemistry:
+
++---------+---------+
+| |psdb1| + |psdb2| |
++---------+---------+
+
+But this one is not:
+
+.. image:: images/potential_stereo_double_bond3.png
+
+
+Tetrahedral Stereogenic atoms
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The following atom types are potential tetrahedral stereogenic atoms:
+
+  - atoms with degree 4
+  - atoms with degree 3 and one implicit H
+  - P or As with degree 3 or 4
+  - N with degree 3 which is in a ring of size 3
+  - S or Se with degree 3 and a total valence of 4 or a total valence of 3 and a net charge of +1.
+
+
+Brief description of the ``findPotentialStereo()`` algorithm
+------------------------------------------------------------
+
+   1. Identify all potential stereogenic atoms and bonds in the molecule. If
+      there aren't any we don't need to do anything else.
+   2. Foreach potential stereogenic atom: save the original chiral tag and then
+      set the chiral tag to CW. Assign an atom symbol that makes this atom
+      unique from all others (this will be used below in the canonicalization
+      algorithm)
+   3. Foreach potential stereogenic bond: assign a bond symbol that makes this
+      bond unique from all others (this will be used below in the
+      canonicalization algorithm)
+   4. Determine the canonical atom ranking taking chirality into account, but
+      not breaking ties. This uses the same canonicalization algorithm that's
+      used to generate SMILES. [#nadinecanon]_
+   5. Remove the chiral tag from any potential stereogenic atom which has two
+      identically ranked neighbors and set its symbol to the default for that
+      atom
+   6. Set the symbol of any double bond which has two identically ranked atoms
+      attached to either end [#eitherend]_ to the default for that bond
+   7. If steps 5 and 6 modfied any atoms or bonds, loop back to step 4. 
+   8. Add any potential stereogenic atom which does not have to identically 
+      ranked neighbors to the results 
+   9. Add any potential stereogenic atom which does not have to identically
+      ranked atoms attached to either end [#eitherend]_ to the results
+   10. Return the results
 
 
 
@@ -581,7 +739,7 @@ chirality:
   >>> Chem.MolToSmiles(ps[0][0],True)
   'CC(=O)O[C@H](C)CCN'
 
-Note that this doesn't make sense without including a bit more
+This doesn't make sense without including a bit more
 context around the stereocenter in the reaction definition:
 
 .. doctest::
@@ -627,9 +785,47 @@ In this case, there's just not sufficient information present to allow
 the information to be preserved. You can help by providing mapping
 information:
 
+**Some caveats** We made this code as robust as we can, but this is a
+non-trivial problem and it's certainly possible to get surprising results.
 
-Rules and caveats
------------------
+Things get tricky if atom ordering around a chiral center changes in the reaction SMARTS. 
+Here are some of the situations that are currently handled correctly.
+
+Reordering of the neighbors, but the number and atom mappings of neighbors
+remains constant. In this case there is no inversion of chirality even though
+the chiral tag on the chiral atom changes between the reactants and products:
+
+.. doctest::
+
+  >>> rxn = AllChem.ReactionFromSmarts('[C:1][C@:2]([F:3])[Br:4]>>[C:1][C@@:2]([S:4])[F:3]')
+  >>> mol = Chem.MolFromSmiles('C[C@@H](F)Br')
+  >>> ps=rxn.RunReactants((mol,))
+  >>> Chem.MolToSmiles(ps[0][0],True)
+  'C[C@@H](F)S'
+
+Adding a neighbor to a chiral atom.
+
+.. doctest::
+
+  >>> rxn = AllChem.ReactionFromSmarts('[C:1][C@H:2]([F:3])[Br:4]>>[C:1][C@@:2](O)([F:3])[Br:4]')
+  >>> mol = Chem.MolFromSmiles('C[C@@H](F)Br')
+  >>> ps=rxn.RunReactants((mol,))
+  >>> Chem.MolToSmiles(ps[0][0],True)
+  'C[C@](O)(F)Br'
+
+Removing a neighbor from a chiral atom.
+
+.. doctest::
+
+  >>> rxn = AllChem.ReactionFromSmarts('[C:1][C@:2](O)([F:3])[Br:4]>>[C:1][C@@H:2]([F:3])[Br:4]')
+  >>> mol = Chem.MolFromSmiles('C[C@@](O)(F)Br')
+  >>> ps=rxn.RunReactants((mol,))
+  >>> Chem.MolToSmiles(ps[0][0],True)
+  'C[C@H](F)Br'
+
+
+Rules and warnings
+------------------
 
 1. Include atom map information at the end of an atom query.
    So do [C,N,O:1] or [C;R:1].
@@ -711,7 +907,7 @@ Which is equivalent to the more efficient::
 
   AtomType d1 [N,O;!H0]
 
-**Note** that these examples tend to use SMARTS's high-precendence and operator "&" and not the low-precedence and ";".
+**Note** that these examples tend to use SMARTS's high-precedence and operator "&" and not the low-precedence and ";".
 This can be important when AtomTypes are combined or when they are repeated.
 The SMARTS "," operator is higher precedence than ";", so definitions that use ";" can lead to unexpected results.
 
@@ -939,7 +1135,7 @@ Here are the steps involved, in order.
         like chlorous acid, chloric acid, and perchloric acid.
         Example: ``O=Cl(=O)O -> [O-][Cl+2][O-]O``
 
-     This step should not generate execptions.
+     This step should not generate exceptions.
 
   3. ``updatePropertyCache``: calculates the explicit and implicit valences on
      all atoms. This generates exceptions for atoms in higher-than-allowed
@@ -1220,9 +1416,10 @@ Support for Enhanced Stereochemistry
 Overview
 ========
 
-We are going to follow, at least for the initial implementation, the enhanced stereo representation
-used in V3k mol files: groups of atoms with specified stereochemistry with an ``ABS``, ``AND``, or ``OR``
-marker indicating what is known. The general idea is that ``AND`` indicates mixtures and ``OR`` indicates unknown single substances.
+Enhanced stereochemistry is used to indicate that a molecule represents more than one possible diastereomer.
+``AND`` indicates that a molecule is a mixture of molecules. ``OR`` indicates unknown single substances,
+and ``ABS`` indicates a single substance. This follows, the convention used in V3k mol files: groups of
+atoms with specified stereochemistry with an ``ABS``, ``AND``, or ``OR`` marker indicating what is known.
 
 Here are some illustrations of what the various combinations mean:
 
@@ -1301,7 +1498,7 @@ and the set of atoms that make it up.
 Use cases
 =========
 
-The initial target is to not lose data on an ``V3k mol -> RDKit -> V3k mol`` round trip. Manipulation, depiction, and searching are future goals.
+The initial target is to not lose data on an ``V3k mol -> RDKit -> V3k mol`` round trip. Manipulation and depiction are future goals.
 
 It is possible to enumerate the elements of a ``StereoGroup`` using the function :py:func:`rdkit.Chem.EnumerateStereoisomers.EumerateStereoisomers`, which also
 preserves membership in the original ``StereoGroup``.
@@ -1333,6 +1530,84 @@ Reactions also preserve ``StereoGroup``s. Product atoms are included in the ``St
   >>> Chem.MolToCXSmiles(ps[0][0])
   'C[C@H](Br)C[C@H](O)Cl |&1:1|'
 
+.. |EnhancedSSS_A|  image:: ./images/EnhancedStereoSSS_molA.png
+   :scale: 75%
+   :align: middle
+.. |EnhancedSSS_B|  image:: ./images/EnhancedStereoSSS_molB.png
+   :scale: 75%
+   :align: middle
+.. |EnhancedSSS_C|  image:: ./images/EnhancedStereoSSS_molC.png
+   :scale: 75%
+   :align: middle
+.. |EnhancedSSS_D|  image:: ./images/EnhancedStereoSSS_molD.png
+   :scale: 75%
+   :align: middle
+.. |EnhancedSSS_E|  image:: ./images/EnhancedStereoSSS_molE.png
+   :scale: 75%
+   :align: middle
+.. |EnhancedSSS_F|  image:: ./images/EnhancedStereoSSS_molF.png
+   :scale: 75%
+   :align: middle
+.. |EnhancedSSS_G|  image:: ./images/EnhancedStereoSSS_molG.png
+   :scale: 75%
+   :align: middle
+
+
+Enhanced Stereochemistry and substructure search
+================================================
+
+Enhanced Stereochemistry may optionally be honored in substructure searches. The following table captures whether or not a substructure query
+(in the rows) matches a particular molecule (in the columns).
+
++-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+
+|                 | |EnhancedSSS_A| | |EnhancedSSS_B| | |EnhancedSSS_C| | |EnhancedSSS_D| | |EnhancedSSS_E| | |EnhancedSSS_F| | |EnhancedSSS_G| |
+|                 |                 |                 |                 |                 |                 |       OR        |      AND        |
++=================+=================+=================+=================+=================+=================+=================+=================+
+| |EnhancedSSS_A| |       Y         |       Y         |       Y         |       Y         |       Y         |       Y         |       Y         |
++-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+
+| |EnhancedSSS_B| |       N         |       Y         |       N         |       N         |       Y         |       Y         |       Y         |
++-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+
+| |EnhancedSSS_C| |       N         |       N         |       Y         |       N         |       N         |       Y         |       Y         |
++-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+
+| |EnhancedSSS_D| |       N         |       N         |       N         |       Y         |       N         |       N         |       N         |
++-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+
+| |EnhancedSSS_E| |       N         |       Y         |       N         |       N         |       N         |       Y         |       Y         |
++-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+
+| |EnhancedSSS_F| |       N         |       N         |       N         |       N         |       N         |       Y         |       Y         |
+|       OR        |                 |                 |                 |                 |                 |                 |                 |
++-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+
+| |EnhancedSSS_G| |       N         |       N         |       N         |       N         |       N         |       N         |       Y         |
+|      AND        |                 |                 |                 |                 |                 |                 |                 |
++-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+
+
+Substructure search using molecules with enhanced stereochemistry follows these rules (where substructure < superstructure):
+
+* achiral < everything, because an achiral query means ignore chirality in the match
+* chiral < AND, because AND includes both the chiral molecule and another one
+* chiral < OR, because OR includes either the chiral molecule or another one
+* OR < AND, because AND includes both molecules that OR could actually mean.
+* one group of two atoms < two groups of one atom, because the latter is 4 different diastereomers, and the former only two of the four.
+
+Some concrete examples of this:
+
+.. doctest ::
+
+  >>> ps = Chem.SubstructMatchParameters()
+  >>> ps.useChirality = True
+  >>> ps.useEnhancedStereo = True
+  >>> m_ABS = Chem.MolFromSmiles('CC[C@H](F)[C@H](C)O')
+  >>> m_AND = Chem.MolFromSmiles('CC[C@H](F)[C@H](C)O |&1:2,4|')
+  >>> m_OR = Chem.MolFromSmiles('CC[C@H](F)[C@H](C)O |o1:2,4|')
+  >>> m_AND.HasSubstructMatch(m_ABS,ps)
+  True
+  >>> m_OR.HasSubstructMatch(m_ABS,ps)
+  True
+  >>> m_AND.HasSubstructMatch(m_OR,ps)
+  True
+  >>> m_OR.HasSubstructMatch(m_AND,ps)
+  False
+
+
 
 Additional Information About the Fingerprints
 *********************************************
@@ -1348,7 +1623,7 @@ RDKit Fingerprints
 This is an RDKit-specific fingerprint that is inspired by (though it differs
 significantly from) public descriptions of the Daylight fingerprint
 [#daylightFP]_. The fingerprinting algorithm identifies all subgraphs in the
-molecule within a particular range of sizes, hashes each subraphs to generate a
+molecule within a particular range of sizes, hashes each subgraph to generate a
 raw bit ID, mods that raw bit ID to fit in the assigned fingerprint size, and
 then sets the corresponding bit. Options are available to generate count-based
 forms of the fingerprint or "non-folded" forms (using a sparse representation).
@@ -1367,7 +1642,7 @@ Fingerprint-specific options
     raw bit ID and generating the appropriate number of random numbers.
   - ``useHs``: toggles whether or not Hs are included in the subgraphs/paths (assuming that there
     are Hs in the molecule graph.
-  - ``tgtDensity``: if this is greather than zero, the fingerprint will be repeatedly folded in half
+  - ``tgtDensity``: if this is greater than zero, the fingerprint will be repeatedly folded in half
     until the density of set bits is greater than or equal to this value or the fingerprint only
     contains `minSize` bits. Note that this means that the resulting fingerprint will not necessarily
     be the size you requested.
@@ -1422,7 +1697,7 @@ times in a molecule, the bits corresponding to counts 1, 2, and 4 will be set.
 Morgan and Feature Morgan Fingerprints
 ======================================
 
-These are implememented based on the original paper [#morganFP]_. The algorithm
+These are implemented based on the original paper [#morganFP]_. The algorithm
 follows the description in the paper as closely as possible with the exception
 of the chemical feature definitions used for the "Feature Morgan" fingerprint -
 the RDKit implementation uses the feature types Donor, Acceptor, Aromatic,
@@ -1459,6 +1734,10 @@ type definitions.
 .. [#ttFP] http://pubs.acs.org/doi/abs/10.1021/ci00054a008
 .. [#morganFP] http://pubs.acs.org/doi/abs/10.1021/ci100050t
 .. [#gobbiFeats] https://doi.org/10.1002/(SICI)1097-0290(199824)61:1%3C47::AID-BIT9%3E3.0.CO;2-Z
+.. [#labutecip] Labute, P. "An Efficient Algorithm for the Determination of Topological RS Chirality" Journal of the Chemical Computing Group (1996)
+.. [#newcip]  Hanson, R. M., Musacchio, S., Mayfield, J. W., Vainio, M. J., Yerin, A., Redkin, D. "Algorithmic Analysis of Cahn−Ingold−Prelog Rules of Stereochemistry: Proposals for Revised Rules and a Guide for Machine Implementation." J. Chem. Inf. Model. 2018, 58, 1755-1765.
+.. [#nadinecanon] Schneider, N., Sayle, R. A. & Landrum, G. A. Get Your Atoms in Order-An Open-Source Implementation of a Novel and Robust Molecular Canonicalization Algorithm. J. Chem. Inf. Model. 2015, 55, 2111-2120.
+.. [#eitherend] It's ok to have two identically ranked atoms on the two ends of the bond, but having two identically ranked atoms on the same end indicates that it's not a potential stereobond.
 
 License
 *******

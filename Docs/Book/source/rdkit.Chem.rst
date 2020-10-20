@@ -100,7 +100,10 @@ Submodules
    rdkit.Chem.rdStructChecker
    rdkit.Chem.rdMolDescriptors
    rdkit.Chem.rdFingerprintGenerator
+   rdkit.Chem.rdMHFPFingerprint
    rdkit.Chem.rdSLNParse
+   rdkit.Chem.rdAbbreviations
+   rdkit.Chem.rdDeprotect
 
 Module contents
 ---------------

@@ -61,16 +61,22 @@ double point3Ddist(const Point3D &pt1, const Point3D &pt2) {
 }
 double pointNdGetItem(const PointND &self, int idx) {
   if (idx >= static_cast<int>(self.dimension()) ||
-      idx < -1 * static_cast<int>(self.dimension()))
+      idx < -1 * static_cast<int>(self.dimension())) {
     throw IndexErrorException(idx);
-  if (idx < 0) idx = self.dimension() + idx;
+  }
+  if (idx < 0) {
+    idx = self.dimension() + idx;
+  }
   return self[idx];
 }
 double pointNdSetItem(PointND &self, int idx, double val) {
   if (idx >= static_cast<int>(self.dimension()) ||
-      idx < -1 * static_cast<int>(self.dimension()))
+      idx < -1 * static_cast<int>(self.dimension())) {
     throw IndexErrorException(idx);
-  if (idx < 0) idx = self.dimension() + idx;
+  }
+  if (idx < 0) {
+    idx = self.dimension() + idx;
+  }
   self[idx] = val;
   return val;
 }
@@ -126,7 +132,15 @@ struct Point_wrapper {
              python::return_value_policy<python::copy_non_const_reference>(),
              "Vector difference")
         .def(python::self - python::self)
-        .def(python::self -= python::self)
+#ifdef __clang__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wself-assign-overloaded"
+#endif
+        .def(python::self -=
+             python::self)  // clang warns incorrectly on this construct
+#ifdef __clang__
+#pragma GCC diagnostic pop
+#endif
         .def(python::self + python::self)
         .def(python::self += python::self)
         .def(python::self * double())
@@ -169,7 +183,15 @@ struct Point_wrapper {
         .def("__getitem__", point2dGetItem)
         .def("__len__", &Point2D::dimension)
         .def(python::self - python::self)
-        .def(python::self -= python::self)
+#ifdef __clang__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wself-assign-overloaded"
+#endif
+        .def(python::self -=
+             python::self)  // clang warns incorrectly on this construct
+#ifdef __clang__
+#pragma GCC diagnostic pop
+#endif
         .def(python::self + python::self)
         .def(python::self += python::self)
         .def(python::self * double())
@@ -209,7 +231,15 @@ struct Point_wrapper {
              python::return_value_policy<python::copy_non_const_reference>(),
              "Vector difference")
         .def(python::self - python::self)
-        .def(python::self -= python::self)
+#ifdef __clang__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wself-assign-overloaded"
+#endif
+        .def(python::self -=
+             python::self)  // clang warns incorrectly on this construct
+#ifdef __clang__
+#pragma GCC diagnostic pop
+#endif
         .def(python::self + python::self)
         .def(python::self += python::self)
         .def(python::self * double())

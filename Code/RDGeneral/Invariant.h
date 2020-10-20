@@ -13,7 +13,7 @@
 #ifndef __RD_INVARIANT_H__
 #define __RD_INVARIANT_H__
 
-#include <assert.h>
+#include <cassert>
 #include <string>
 #include <iostream>
 #include <stdexcept>
@@ -66,9 +66,9 @@ class RDKIT_RDGENERAL_EXPORT Invariant : public std::runtime_error {
         prefix_d(prefix),
         file_dp(file),
         line_d(line) {}
-  ~Invariant() throw(){};
+  ~Invariant() noexcept {};
 
-  std::string getMessage() const { return mess_d; }
+  const char* what() const noexcept override { return mess_d.c_str(); }
 
   const char* getFile() const { return file_dp; }
 

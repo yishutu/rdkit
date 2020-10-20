@@ -10,7 +10,7 @@
 #include <RDGeneral/export.h>
 #include <list>
 #include <algorithm>
-#include <math.h>
+#include <cmath>
 #include "SubstructMatchCustom.h"
 
 namespace RDKit {
@@ -55,7 +55,7 @@ class RDKIT_FMCS_EXPORT RingMatchTableSet {
   };
 
  private:
-  std::vector<std::vector<size_t>>* QueryBondRingsIndeces;
+  std::vector<std::vector<size_t>>* QueryBondRingsIndeces{nullptr};
   std::map<const ROMol*, std::vector<std::vector<size_t>>>
       TargetBondRingsIndecesSet;  // by target molecules
 
@@ -63,7 +63,7 @@ class RDKIT_FMCS_EXPORT RingMatchTableSet {
   std::map<const INT_VECT*, unsigned> QueryRingIndex;
 
  public:
-  RingMatchTableSet() : QueryBondRingsIndeces(0) {}
+  RingMatchTableSet()  {}
 
   inline void clear() {
     if (QueryBondRingsIndeces) QueryBondRingsIndeces->clear();
@@ -163,15 +163,15 @@ class RDKIT_FMCS_EXPORT RingMatchTableSet {
         bp.CompleteRingsOnly = false;
         bool match =
 #ifdef NEVER_xxx_PRECOMPUTED_TABLES_MATCH  // not computed yet, because
-                                           // MatchTable computation usees this
+                                           // MatchTable computation uses this
                                            // ring info table
             FMCS::SubstructMatchCustomTable(graph2, graph1, tag->AtomMatchTable,
                                             tag->BondMatchTable);
-#else  // noticable slowly:
+#else  // noticeable slowly:
             FMCS::SubstructMatchCustom(
                 graph2, *targetMolecule, graph1, *query, parameters.AtomTyper,
-                parameters.BondTyper, NULL, parameters.AtomCompareParameters,
-                bp, NULL);
+                parameters.BondTyper, nullptr, parameters.AtomCompareParameters,
+                bp, parameters.CompareFunctionsUserData);
 #endif
         if (match) m.setMatch(i, &*r2);
       }

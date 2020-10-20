@@ -20,7 +20,6 @@
 #include <GraphMol/FileParsers/MolSupplier.h>
 #include <GraphMol/RDKitBase.h>
 #include <RDBoost/python_streambuf.h>
-#include <RDBoost/iterator_next.h>
 
 #include "MolSupplier.h"
 
@@ -34,7 +33,7 @@ class LocalForwardSDMolSupplier : public RDKit::ForwardSDMolSupplier {
   LocalForwardSDMolSupplier(python::object &input, bool sanitize, bool removeHs,
                             bool strictParsing) {
     // FIX: minor leak here
-    auto *sb = new streambuf(input,'b');
+    auto *sb = new streambuf(input, 'b');
     dp_inStream = new streambuf::istream(*sb);
     df_owner = true;
     df_sanitize = sanitize;
@@ -56,7 +55,8 @@ class LocalForwardSDMolSupplier : public RDKit::ForwardSDMolSupplier {
     std::istream *tmpStream = nullptr;
     tmpStream = static_cast<std::istream *>(
         new std::ifstream(filename.c_str(), std::ios_base::binary));
-    if (!tmpStream || (!(*tmpStream)) || (tmpStream->bad())) {
+    if (!(*tmpStream) || tmpStream->bad()) {
+      delete tmpStream;
       std::ostringstream errout;
       errout << "Bad input file " << filename;
       throw RDKit::BadFileException(errout.str());
@@ -114,7 +114,7 @@ struct forwardsdmolsup_wrap {
             (python::arg("filename"), python::arg("sanitize") = true,
              python::arg("removeHs") = true,
              python::arg("strictParsing") = true)))
-        .def(NEXT_METHOD,
+        .def("__next__",
              (ROMol * (*)(LocalForwardSDMolSupplier *)) & MolForwardSupplNext,
              "Returns the next molecule in the file.  Raises _StopIteration_ "
              "on EOF.\n",

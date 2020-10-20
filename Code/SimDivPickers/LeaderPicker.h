@@ -30,13 +30,13 @@ namespace RDPickers {
  */
 class LeaderPicker : public DistPicker {
  public:
-  double default_threshold;
-  int default_nthreads;
+  double default_threshold{0.0};
+  int default_nthreads{1};
 
   /*! \brief Default Constructor
    *
    */
-  LeaderPicker() : default_threshold(0.0), default_nthreads(1) {}
+  LeaderPicker()  {}
   LeaderPicker(double threshold)
       : default_threshold(threshold), default_nthreads(1) {}
   LeaderPicker(double threshold, int nthreads)
@@ -116,9 +116,10 @@ class LeaderPicker : public DistPicker {
 };
 
 #ifdef USE_THREADED_LEADERPICKER
-// Note that this block of code currently only works on linux (which is why it's disabled by default)
-// We will revisit this during the 2020.03 release cycle in order to get a multi-threaded version of
-// the LeaderPicker that works on all supported platforms
+// Note that this block of code currently only works on linux (which is why it's
+// disabled by default) We will revisit this during the 2020.03 release cycle in
+// order to get a multi-threaded version of the LeaderPicker that works on all
+// supported platforms
 template <typename T>
 void *LeaderPickerWork(void *arg);
 
@@ -325,10 +326,9 @@ struct LeaderPickerState {
   int query;
   T *func;
 
-  LeaderPickerState(unsigned int count, int) {
+  LeaderPickerState(unsigned int count, int) : left(count), threshold(0.0), query(0), func(nullptr) {
     v.resize(count);
     for (unsigned int i = 0; i < count; i++) v[i] = i;
-    left = count;
   }
 
   bool empty() { return left == 0; }

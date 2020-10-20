@@ -25,6 +25,7 @@
 #include <GraphMol/FileParsers/FileParserUtils.h>
 #include <GraphMol/FileParsers/SequenceParsers.h>
 #include <GraphMol/FileParsers/SequenceWriters.h>
+#include <GraphMol/FileParsers/PNGParser.h>
 #include <RDGeneral/BadFileException.h>
 #include <RDGeneral/FileParseException.h>
 
@@ -36,21 +37,23 @@
 namespace python = boost::python;
 using namespace RDKit;
 
-void rdSanitExceptionTranslator(RDKit::MolSanitizeException const &x) {
-  std::ostringstream ss;
-  ss << "Sanitization error: " << x.message();
-  PyErr_SetString(PyExc_ValueError, ss.str().c_str());
-}
 void rdBadFileExceptionTranslator(RDKit::BadFileException const &x) {
   std::ostringstream ss;
-  ss << "File error: " << x.message();
+  ss << "File error: " << x.what();
   PyErr_SetString(PyExc_IOError, ss.str().c_str());
+}
+void rdFileParseExceptionTranslator(RDKit::FileParseException const &x) {
+  std::ostringstream ss;
+  ss << "File parsing error: " << x.what();
+  PyErr_SetString(PyExc_RuntimeError, ss.str().c_str());
 }
 
 namespace RDKit {
 std::string pyObjectToString(python::object input) {
   python::extract<std::string> ex(input);
-  if (ex.check()) return ex();
+  if (ex.check()) {
+    return ex();
+  }
   std::wstring ws = python::extract<std::wstring>(input);
   return std::string(ws.begin(), ws.end());
 }
@@ -99,7 +102,7 @@ ROMol *MolFromTPLFile(const char *filename, bool sanitize = true,
   try {
     newM = TPLFileToMol(filename, sanitize, skipFirstConf);
   } catch (RDKit::BadFileException &e) {
-    PyErr_SetString(PyExc_IOError, e.message());
+    PyErr_SetString(PyExc_IOError, e.what());
     throw python::error_already_set();
   } catch (...) {
     newM = nullptr;
@@ -126,10 +129,10 @@ ROMol *MolFromMolFile(const char *molFilename, bool sanitize, bool removeHs,
   try {
     newM = MolFileToMol(molFilename, sanitize, removeHs, strictParsing);
   } catch (RDKit::BadFileException &e) {
-    PyErr_SetString(PyExc_IOError, e.message());
+    PyErr_SetString(PyExc_IOError, e.what());
     throw python::error_already_set();
   } catch (RDKit::FileParseException &e) {
-    BOOST_LOG(rdWarningLog) << e.message() << std::endl;
+    BOOST_LOG(rdWarningLog) << e.what() << std::endl;
   } catch (...) {
   }
   return static_cast<ROMol *>(newM);
@@ -144,7 +147,7 @@ ROMol *MolFromMolBlock(python::object imolBlock, bool sanitize, bool removeHs,
     newM =
         MolDataStreamToMol(inStream, line, sanitize, removeHs, strictParsing);
   } catch (RDKit::FileParseException &e) {
-    BOOST_LOG(rdWarningLog) << e.message() << std::endl;
+    BOOST_LOG(rdWarningLog) << e.what() << std::endl;
   } catch (...) {
   }
   return static_cast<ROMol *>(newM);
@@ -163,7 +166,7 @@ ROMol *MolFromMol2File(const char *molFilename, bool sanitize = true,
     newM = Mol2FileToMol(molFilename, sanitize, removeHs, CORINA,
                          cleanupSubstructures);
   } catch (RDKit::BadFileException &e) {
-    PyErr_SetString(PyExc_IOError, e.message());
+    PyErr_SetString(PyExc_IOError, e.what());
     throw python::error_already_set();
   } catch (...) {
     newM = nullptr;
@@ -191,10 +194,10 @@ ROMol *MolFromPDBFile(const char *filename, bool sanitize, bool removeHs,
   try {
     newM = PDBFileToMol(filename, sanitize, removeHs, flavor, proximityBonding);
   } catch (RDKit::BadFileException &e) {
-    PyErr_SetString(PyExc_IOError, e.message());
+    PyErr_SetString(PyExc_IOError, e.what());
     throw python::error_already_set();
   } catch (RDKit::FileParseException &e) {
-    BOOST_LOG(rdWarningLog) << e.message() << std::endl;
+    BOOST_LOG(rdWarningLog) << e.what() << std::endl;
   } catch (...) {
   }
   return static_cast<ROMol *>(newM);
@@ -208,7 +211,7 @@ ROMol *MolFromPDBBlock(python::object molBlock, bool sanitize, bool removeHs,
     newM = PDBDataStreamToMol(inStream, sanitize, removeHs, flavor,
                               proximityBonding);
   } catch (RDKit::FileParseException &e) {
-    BOOST_LOG(rdWarningLog) << e.message() << std::endl;
+    BOOST_LOG(rdWarningLog) << e.what() << std::endl;
   } catch (...) {
   }
   return static_cast<ROMol *>(newM);
@@ -219,7 +222,7 @@ ROMol *MolFromSequence(python::object seq, bool sanitize, int flavor) {
   try {
     newM = SequenceToMol(pyObjectToString(seq), sanitize, flavor);
   } catch (RDKit::FileParseException &e) {
-    BOOST_LOG(rdWarningLog) << e.message() << std::endl;
+    BOOST_LOG(rdWarningLog) << e.what() << std::endl;
   } catch (...) {
   }
   return static_cast<ROMol *>(newM);
@@ -229,7 +232,7 @@ ROMol *MolFromFASTA(python::object seq, bool sanitize, int flavor) {
   try {
     newM = FASTAToMol(pyObjectToString(seq), sanitize, flavor);
   } catch (RDKit::FileParseException &e) {
-    BOOST_LOG(rdWarningLog) << e.message() << std::endl;
+    BOOST_LOG(rdWarningLog) << e.what() << std::endl;
   } catch (...) {
   }
   return static_cast<ROMol *>(newM);
@@ -239,7 +242,7 @@ ROMol *MolFromHELM(python::object seq, bool sanitize) {
   try {
     newM = HELMToMol(pyObjectToString(seq), sanitize);
   } catch (RDKit::FileParseException &e) {
-    BOOST_LOG(rdWarningLog) << e.message() << std::endl;
+    BOOST_LOG(rdWarningLog) << e.what() << std::endl;
   } catch (...) {
   }
   return static_cast<ROMol *>(newM);
@@ -247,13 +250,14 @@ ROMol *MolFromHELM(python::object seq, bool sanitize) {
 
 std::string molFragmentToSmarts(const ROMol &mol, python::object atomsToUse,
                                 python::object bondsToUse,
-                                bool doIsomericSmarts = true)
-{
-  auto atomIndices = pythonObjectToVect(atomsToUse, static_cast<int>(mol.getNumAtoms()));
-  auto bondIndices = pythonObjectToVect(bondsToUse, static_cast<int>(mol.getNumBonds()));
-  return RDKit::MolFragmentToSmarts(mol, *atomIndices, bondIndices.get(), doIsomericSmarts);
+                                bool doIsomericSmarts = true) {
+  auto atomIndices =
+      pythonObjectToVect(atomsToUse, static_cast<int>(mol.getNumAtoms()));
+  auto bondIndices =
+      pythonObjectToVect(bondsToUse, static_cast<int>(mol.getNumBonds()));
+  return RDKit::MolFragmentToSmarts(mol, *atomIndices, bondIndices.get(),
+                                    doIsomericSmarts);
 }
-
 
 struct smilesfrag_gen {
   std::string operator()(const ROMol &mol, const std::vector<int> &atomsToUse,
@@ -288,11 +292,13 @@ std::string MolFragmentToSmilesHelper(
     python::object atomSymbols, python::object bondSymbols,
     bool doIsomericSmiles, bool doKekule, int rootedAtAtom, bool canonical,
     bool allBondsExplicit, bool allHsExplicit) {
-  auto avect = pythonObjectToVect(atomsToUse, static_cast<int>(mol.getNumAtoms()));
+  auto avect =
+      pythonObjectToVect(atomsToUse, static_cast<int>(mol.getNumAtoms()));
   if (!avect.get() || !(avect->size())) {
     throw_value_error("atomsToUse must not be empty");
   }
-  auto bvect = pythonObjectToVect(bondsToUse, static_cast<int>(mol.getNumBonds()));
+  auto bvect =
+      pythonObjectToVect(bondsToUse, static_cast<int>(mol.getNumBonds()));
   std::unique_ptr<std::vector<std::string>> asymbols =
       pythonObjectToVect<std::string>(atomSymbols);
   std::unique_ptr<std::vector<std::string>> bsymbols =
@@ -320,13 +326,10 @@ std::vector<unsigned int> CanonicalRankAtoms(const ROMol &mol,
   return ranks;
 }
 
-std::vector<int> CanonicalRankAtomsInFragment(const ROMol &mol,
-                                              python::object atomsToUse,
-                                              python::object bondsToUse,
-                                              python::object atomSymbols,
-                                              bool breakTies = true,
-					      bool includeChirality = true,
-					      bool includeIsotopes = true)
+std::vector<int> CanonicalRankAtomsInFragment(
+    const ROMol &mol, python::object atomsToUse, python::object bondsToUse,
+    python::object atomSymbols, bool breakTies = true,
+    bool includeChirality = true, bool includeIsotopes = true)
 
 {
   std::unique_ptr<std::vector<int>> avect =
@@ -343,15 +346,18 @@ std::vector<int> CanonicalRankAtomsInFragment(const ROMol &mol,
   }
 
   boost::dynamic_bitset<> atoms(mol.getNumAtoms());
-  for (size_t i = 0; i < avect->size(); ++i) atoms[(*avect)[i]] = true;
+  for (size_t i = 0; i < avect->size(); ++i) {
+    atoms[(*avect)[i]] = true;
+  }
 
   boost::dynamic_bitset<> bonds(mol.getNumBonds());
-  for (size_t i = 0; bvect.get() && i < bvect->size(); ++i)
+  for (size_t i = 0; bvect.get() && i < bvect->size(); ++i) {
     bonds[(*bvect)[i]] = true;
+  }
 
   std::vector<unsigned int> ranks(mol.getNumAtoms());
-  Canon::rankFragmentAtoms(mol, ranks, atoms, bonds, asymbols.get(),
-                           breakTies, includeChirality, includeIsotopes);
+  Canon::rankFragmentAtoms(mol, ranks, atoms, bonds, asymbols.get(), breakTies,
+                           includeChirality, includeIsotopes);
 
   std::vector<int> resRanks(mol.getNumAtoms());
   // set unused ranks to -1 for the Python interface
@@ -372,6 +378,188 @@ ROMol *MolFromSmilesHelper(python::object ismiles,
 
   return SmilesToMol(smiles, params);
 }
+
+python::list MolToRandomSmilesHelper(const ROMol &mol, unsigned int numSmiles,
+                                     unsigned int randomSeed,
+                                     bool doIsomericSmiles, bool doKekule,
+                                     bool allBondsExplicit,
+                                     bool allHsExplicit) {
+  auto res = MolToRandomSmilesVect(mol, numSmiles, randomSeed, doIsomericSmiles,
+                                   doKekule, allBondsExplicit, allHsExplicit);
+  python::list pyres;
+  for (auto smi : res) {
+    pyres.append(smi);
+  }
+  return pyres;
+}
+
+ROMol *MolFromPNGFile(const char *filename, python::object pyParams) {
+  SmilesParserParams params;
+  if (pyParams) {
+    params = python::extract<SmilesParserParams>(pyParams);
+  }
+  ROMol *newM = nullptr;
+  try {
+    newM = PNGFileToMol(filename, params);
+  } catch (RDKit::BadFileException &e) {
+    PyErr_SetString(PyExc_IOError, e.what());
+    throw python::error_already_set();
+  } catch (RDKit::FileParseException &e) {
+    BOOST_LOG(rdWarningLog) << e.what() << std::endl;
+  } catch (...) {
+  }
+  return newM;
+}
+
+ROMol *MolFromPNGString(python::object png, python::object pyParams) {
+  SmilesParserParams params;
+  if (pyParams) {
+    params = python::extract<SmilesParserParams>(pyParams);
+  }
+  ROMol *newM = nullptr;
+  try {
+    newM = PNGStringToMol(pyObjectToString(png), params);
+  } catch (RDKit::FileParseException &e) {
+    BOOST_LOG(rdWarningLog) << e.what() << std::endl;
+  } catch (...) {
+  }
+  return newM;
+}
+
+python::object addMolToPNGFileHelper(const ROMol &mol, python::object fname,
+                                     bool includePkl, bool includeSmiles,
+                                     bool includeMol) {
+  std::string cstr = python::extract<std::string>(fname);
+
+  auto res = addMolToPNGFile(mol, cstr, includePkl, includeSmiles, includeMol);
+
+  python::object retval = python::object(
+      python::handle<>(PyBytes_FromStringAndSize(res.c_str(), res.length())));
+  return retval;
+}
+
+python::object addMolToPNGStringHelper(const ROMol &mol, python::object png,
+                                       bool includePkl, bool includeSmiles,
+                                       bool includeMol) {
+  std::string cstr = python::extract<std::string>(png);
+
+  auto res =
+      addMolToPNGString(mol, cstr, includePkl, includeSmiles, includeMol);
+
+  python::object retval = python::object(
+      python::handle<>(PyBytes_FromStringAndSize(res.c_str(), res.length())));
+  return retval;
+}
+
+python::object addMetadataToPNGFileHelper(python::dict pymetadata, python::object fname) {
+  std::string cstr = python::extract<std::string>(fname);
+
+  std::vector<std::pair<std::string, std::string>> metadata;
+  for (unsigned int i = 0;
+       i < python::extract<unsigned int>(pymetadata.keys().attr("__len__")());
+       ++i) {
+    std::string key = python::extract<std::string>(pymetadata.keys()[i]); 
+    std::string val = python::extract<std::string>(pymetadata.values()[i]);
+    metadata.push_back(std::make_pair(key,val));
+  }
+
+  auto res = addMetadataToPNGFile(cstr, metadata);
+
+  python::object retval = python::object(
+      python::handle<>(PyBytes_FromStringAndSize(res.c_str(), res.length())));
+  return retval;
+}
+
+python::object addMetadataToPNGStringHelper(python::dict pymetadata, python::object png) {
+  std::string cstr = python::extract<std::string>(png);
+
+  std::vector<std::pair<std::string, std::string>> metadata;
+  for (unsigned int i = 0;
+       i < python::extract<unsigned int>(pymetadata.keys().attr("__len__")());
+       ++i) {
+    std::string key = python::extract<std::string>(pymetadata.keys()[i]); 
+    std::string val = python::extract<std::string>(pymetadata.values()[i]);
+    metadata.push_back(std::make_pair(key,val));
+  }
+
+  auto res = addMetadataToPNGString(cstr, metadata);
+
+  python::object retval = python::object(
+      python::handle<>(PyBytes_FromStringAndSize(res.c_str(), res.length())));
+  return retval;
+}
+
+
+python::object MolsFromPNGFile(const char *filename, const std::string &tag,
+                               python::object pyParams) {
+  SmilesParserParams params;
+  if (pyParams) {
+    params = python::extract<SmilesParserParams>(pyParams);
+  }
+  std::vector<std::unique_ptr<ROMol>> mols;
+  try {
+    mols = PNGFileToMols(filename, tag, params);
+  } catch (RDKit::BadFileException &e) {
+    PyErr_SetString(PyExc_IOError, e.what());
+    throw python::error_already_set();
+  } catch (RDKit::FileParseException &e) {
+    BOOST_LOG(rdWarningLog) << e.what() << std::endl;
+  } catch (...) {
+  }
+  python::list res;
+  for (auto &mol : mols) {
+    // take ownership of the data from the unique_ptr
+    ROMOL_SPTR sptr(mol.release());
+    res.append(sptr);
+  }
+  return python::tuple(res);
+}
+
+python::tuple MolsFromPNGString(python::object png, const std::string &tag,
+                                python::object pyParams) {
+  SmilesParserParams params;
+  if (pyParams) {
+    params = python::extract<SmilesParserParams>(pyParams);
+  }
+  auto mols = PNGStringToMols(pyObjectToString(png), tag, params);
+  python::list res;
+  for (auto &mol : mols) {
+    // take ownership of the data from the unique_ptr
+    ROMOL_SPTR sptr(mol.release());
+    res.append(sptr);
+  }
+  return python::tuple(res);
+}
+
+namespace {
+python::dict translateMetadata(const std::vector<std::pair<std::string,std::string>> &metadata){
+  python::dict res;
+  for(const auto &pr : metadata ){
+    // keys are safe to extract:
+    std::string key = pr.first;
+    // but values may include binary, so we convert them directly to bytes:
+    python::object val = python::object(
+        python::handle<>(PyBytes_FromStringAndSize(pr.second.c_str(), pr.second.length())));
+    res[key] = val;
+  }
+  return res;
+}
+
+}
+python::dict MetadataFromPNGFile(python::object fname){
+  std::string cstr = python::extract<std::string>(fname);
+  auto metadata = PNGFileToMetadata(cstr);
+  return translateMetadata(metadata);
+}
+
+python::dict MetadataFromPNGString(python::object png){
+  std::string cstr = python::extract<std::string>(png);
+  auto metadata = PNGStringToMetadata(cstr);
+  return translateMetadata(metadata);
+}
+
+
+
 }  // namespace RDKit
 
 // MolSupplier stuff
@@ -382,7 +570,7 @@ void wrap_sdsupplier();
 void wrap_forwardsdsupplier();
 void wrap_tdtsupplier();
 void wrap_smisupplier();
-#ifdef RDK_BUILD_COORDGEN_SUPPORT
+#ifdef RDK_BUILD_MAEPARSER_SUPPORT
 void wrap_maesupplier();
 #endif
 
@@ -392,6 +580,10 @@ void wrap_sdwriter();
 void wrap_tdtwriter();
 void wrap_pdbwriter();
 
+// MultithreadedMolSupplier stuff
+void wrap_multiSmiSupplier();
+void wrap_multiSDSupplier();
+
 BOOST_PYTHON_MODULE(rdmolfiles) {
   std::string docString;
 
@@ -400,6 +592,9 @@ BOOST_PYTHON_MODULE(rdmolfiles) {
       "formats.";
   python::register_exception_translator<RDKit::BadFileException>(
       &rdBadFileExceptionTranslator);
+
+  python::register_exception_translator<RDKit::FileParseException>(
+      &rdFileParseExceptionTranslator);
 
   docString =
       "Construct a molecule from a TPL file.\n\n\
@@ -673,6 +868,25 @@ BOOST_PYTHON_MODULE(rdmolfiles) {
                python::arg("confId") = -1, python::arg("kekulize") = true,
                python::arg("forceV3000") = false),
               docString.c_str());
+  docString =
+      "Returns a V3000 Mol block for a molecule\n\
+  ARGUMENTS:\n\
+\n\
+    - mol: the molecule\n\
+    - includeStereo: (optional) toggles inclusion of stereochemical\n\
+      information in the output\n\
+    - confId: (optional) selects which conformation to output (-1 = default)\n\
+    - kekulize: (optional) triggers kekulization of the molecule before it's written,\n\
+      as suggested by the MDL spec.\n\
+\n\
+  RETURNS:\n\
+\n\
+    a string\n\
+\n";
+  python::def("MolToV3KMolBlock", RDKit::MolToV3KMolBlock,
+              (python::arg("mol"), python::arg("includeStereo") = true,
+               python::arg("confId") = -1, python::arg("kekulize") = true),
+              docString.c_str());
 
   docString =
       "Writes a Mol file for a molecule\n\
@@ -698,6 +912,28 @@ BOOST_PYTHON_MODULE(rdmolfiles) {
        python::arg("includeStereo") = true, python::arg("confId") = -1,
        python::arg("kekulize") = true, python::arg("forceV3000") = false),
       docString.c_str());
+
+  docString =
+      "Writes a V3000 Mol file for a molecule\n\
+  ARGUMENTS:\n\
+\n\
+    - mol: the molecule\n\
+    - filename: the file to write to\n\
+    - includeStereo: (optional) toggles inclusion of stereochemical\n\
+      information in the output\n\
+    - confId: (optional) selects which conformation to output (-1 = default)\n\
+    - kekulize: (optional) triggers kekulization of the molecule before it's written,\n\
+      as suggested by the MDL spec.\n\
+\n\
+  RETURNS:\n\
+\n\
+    a string\n\
+\n";
+  python::def("MolToV3KMolFile", RDKit::MolToV3KMolFile,
+              (python::arg("mol"), python::arg("filename"),
+               python::arg("includeStereo") = true, python::arg("confId") = -1,
+               python::arg("kekulize") = true),
+              docString.c_str());
 
   //
 
@@ -740,12 +976,20 @@ BOOST_PYTHON_MODULE(rdmolfiles) {
       .def_readwrite(
           "allowCXSMILES", &RDKit::SmilesParserParams::allowCXSMILES,
           "controls whether or not the CXSMILES extensions are parsed")
+      .def_readwrite("strictCXSMILES",
+                     &RDKit::SmilesParserParams::strictCXSMILES,
+                     "controls whether or not problems in CXSMILES parsing "
+                     "causes molecule parsing to fail")
       .def_readwrite("sanitize", &RDKit::SmilesParserParams::sanitize,
                      "controls whether or not the molecule is sanitized before "
                      "being returned")
       .def_readwrite("removeHs", &RDKit::SmilesParserParams::removeHs,
                      "controls whether or not Hs are removed before the "
-                     "molecule is returned");
+                     "molecule is returned")
+      .def_readwrite("useLegacyStereo",
+                     &RDKit::SmilesParserParams::useLegacyStereo,
+                     "controls whether or not the legacy stereochemistry "
+                     "perception code is used");
   docString =
       "Construct a molecule from a SMILES string.\n\n\
      ARGUMENTS:\n\
@@ -780,7 +1024,7 @@ BOOST_PYTHON_MODULE(rdmolfiles) {
 \n\
    The optional replacements dict can be used to do string substitution of abbreviations \n\
    in the input SMILES. The set of substitutions is repeatedly looped through until \n\
-   the string no longer changes. It is the responsiblity of the caller to make sure \n\
+   the string no longer changes. It is the responsibility of the caller to make sure \n\
    that substitutions results in legal and sensible SMILES. \n\
  \n\
    Examples of replacements: \n\
@@ -1008,9 +1252,11 @@ BOOST_PYTHON_MODULE(rdmolfiles) {
 \n\
     a string\n\
 \n";
-  python::def("MolFragmentToSmarts", molFragmentToSmarts,
-              (python::arg("mol"), python::arg("atomsToUse"), python::arg("bondsToUse") = 0, python::arg("isomericSmarts") = true),
-              docString.c_str());
+  python::def(
+      "MolFragmentToSmarts", molFragmentToSmarts,
+      (python::arg("mol"), python::arg("atomsToUse"),
+       python::arg("bondsToUse") = 0, python::arg("isomericSmarts") = true),
+      docString.c_str());
 
   docString =
       "Writes a molecule to a TPL file.\n\n\
@@ -1286,7 +1532,7 @@ BOOST_PYTHON_MODULE(rdmolfiles) {
     [0,1,0,1]\n\
 \n\
   In this case the carbons have the same symmetry class and the nitrogens have the same\n\
-  symmetry class.  From the perspective of the Molecular Graph, they are indentical.\n\
+  symmetry class.  From the perspective of the Molecular Graph, they are identical.\n\
 \n\
   ARGUMENTS:\n\
 \n\
@@ -1332,13 +1578,13 @@ BOOST_PYTHON_MODULE(rdmolfiles) {
 \n\
     a string\n\
 \n";
-  python::def("CanonicalRankAtomsInFragment", CanonicalRankAtomsInFragment,
-              (python::arg("mol"), python::arg("atomsToUse"),
-               python::arg("bondsToUse") = 0, python::arg("atomSymbols") = 0,
-               python::arg("breakTies") = true,
-	       python::arg("includeChirality") = true,
-               python::arg("includeIsotopes") = true),
-              docString.c_str());
+  python::def(
+      "CanonicalRankAtomsInFragment", CanonicalRankAtomsInFragment,
+      (python::arg("mol"), python::arg("atomsToUse"),
+       python::arg("bondsToUse") = 0, python::arg("atomSymbols") = 0,
+       python::arg("breakTies") = true, python::arg("includeChirality") = true,
+       python::arg("includeIsotopes") = true),
+      docString.c_str());
 
   python::def(
       "CreateAtomIntPropertyList", FileParserUtils::createAtomIntPropertyList,
@@ -1367,6 +1613,151 @@ BOOST_PYTHON_MODULE(rdmolfiles) {
       "creates a list property on the molecule from individual atom property "
       "values");
 
+  python::def(
+      "MolToRandomSmilesVect", RDKit::MolToRandomSmilesHelper,
+      (python::arg("mol"), python::arg("numSmiles"),
+       python::arg("randomSeed") = 0, python::arg("isomericSmiles") = true,
+       python::arg("kekuleSmiles") = false,
+       python::arg("allBondsExplicit") = false,
+       python::arg("allHsExplicit") = false),
+      "returns a list of SMILES generated using the randomSmiles algorithm");
+
+  docString =
+      R"DOC(Construct a molecule from metadata in a PNG string.
+
+     ARGUMENTS:
+
+       - png: the PNG string
+
+       - params: used to provide optional parameters for the metadata parsing
+
+     RETURNS:
+       a Mol object, None on failure.
+  )DOC";
+  python::def("MolFromPNGString", MolFromPNGString,
+              (python::arg("png"), python::arg("params") = python::object()),
+              docString.c_str(),
+              python::return_value_policy<python::manage_new_object>());
+
+  docString =
+      R"DOC(Construct a molecule from metadata in a PNG file.
+
+     ARGUMENTS:
+
+       - filename: the PNG filename
+
+       - params: used to provide optional parameters for the metadata parsing
+
+     RETURNS:
+       a Mol object, None on failure.)DOC";
+  python::def(
+      "MolFromPNGFile", MolFromPNGFile,
+      (python::arg("filename"), python::arg("params") = python::object()),
+      docString.c_str(),
+      python::return_value_policy<python::manage_new_object>());
+
+  python::def("MolsFromPNGString", MolsFromPNGString,
+              (python::arg("png"), python::arg("tag") = PNGData::pklTag,
+               python::arg("params") = python::object()),
+              "returns a tuple of molecules constructed from the PNG string");
+  python::def("MolsFromPNGFile", MolsFromPNGFile,
+              (python::arg("filename"), python::arg("tag") = PNGData::pklTag,
+               python::arg("params") = python::object()),
+              "returns a tuple of molecules constructed from the PNG file");
+
+  docString =
+      R"DOC(Adds molecular metadata to PNG data read from a file.
+
+     ARGUMENTS:
+
+       - mol: the molecule
+
+       - filename: the PNG filename
+
+       - includePkl: include the RDKit's internal binary format in the output
+
+       - includeSmiles: include CXSmiles in the output
+
+       - includeMol: include CTAB (Mol) in the output
+
+     RETURNS:
+       the updated PNG data)DOC";
+  python::def(
+      "MolMetadataToPNGFile", addMolToPNGFileHelper,
+      (python::arg("mol"), python::arg("filename"),
+       python::arg("includePkl") = true, python::arg("includeSmiles") = true,
+       python::arg("includeMol") = false),
+      docString.c_str());
+
+  docString =
+      R"DOC(Adds molecular metadata to a PNG string.
+
+     ARGUMENTS:
+
+       - mol: the molecule
+
+       - png: the PNG string
+
+       - includePkl: include the RDKit's internal binary format in the output
+
+       - includeSmiles: include CXSmiles in the output
+
+       - includeMol: include CTAB (Mol) in the output
+
+     RETURNS:
+       the updated PNG data)DOC";
+  python::def(
+      "MolMetadataToPNGString", addMolToPNGStringHelper,
+      (python::arg("mol"), python::arg("png"), python::arg("includePkl") = true,
+       python::arg("includeSmiles") = true, python::arg("includeMol") = false),
+      docString.c_str());
+
+  docString =
+      R"DOC(Adds metadata to PNG data read from a file.
+
+     ARGUMENTS:
+
+       - metadata: dict with the metadata to be written 
+                   (keys and values should be strings)
+
+       - filename: the PNG filename
+
+     RETURNS:
+       the updated PNG data)DOC";
+  python::def(
+      "AddMetadataToPNGFile", addMetadataToPNGFileHelper,
+      (python::arg("metadata"), python::arg("filename")),
+      docString.c_str());
+
+  docString =
+      R"DOC(Adds metadata to a PNG string.
+
+     ARGUMENTS:
+
+       - metadata: dict with the metadata to be written 
+                   (keys and values should be strings)
+
+       - png: the PNG string
+
+     RETURNS:
+       the updated PNG data)DOC";
+  python::def(
+      "AddMetadataToPNGString", addMetadataToPNGStringHelper,
+      (python::arg("metadata"), python::arg("png")),
+      docString.c_str());
+
+  python::def(
+      "MetadataFromPNGFile", MetadataFromPNGFile,
+      (python::arg("filename")),
+      "Returns a dict with all metadata from the PNG file. Keys are strings, values are bytes.");
+
+  python::def(
+      "MetadataFromPNGString", MetadataFromPNGString,
+      (python::arg("png")),
+      "Returns a dict with all metadata from the PNG string. Keys are strings, values are bytes.");
+
+
+
 /********************************************************
  * MolSupplier stuff
  *******************************************************/
@@ -1377,7 +1768,7 @@ BOOST_PYTHON_MODULE(rdmolfiles) {
   wrap_forwardsdsupplier();
   wrap_tdtsupplier();
   wrap_smisupplier();
-#ifdef RDK_BUILD_COORDGEN_SUPPORT
+#ifdef RDK_BUILD_MAEPARSER_SUPPORT
   wrap_maesupplier();
 #endif
   // wrap_pdbsupplier();
@@ -1389,4 +1780,12 @@ BOOST_PYTHON_MODULE(rdmolfiles) {
   wrap_sdwriter();
   wrap_tdtwriter();
   wrap_pdbwriter();
+
+#ifdef RDK_THREADSAFE_SSS
+  /********************************************************
+   * MultithreadedMolWriter stuff
+   *******************************************************/
+  wrap_multiSmiSupplier();
+  wrap_multiSDSupplier();
+#endif
 }

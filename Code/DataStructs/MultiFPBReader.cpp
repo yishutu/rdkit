@@ -70,7 +70,9 @@ struct sim_args {
 void tversky_helper(unsigned int threadId, unsigned int numThreads,
                     const sim_args *args) {
   for (unsigned int i = threadId; i < args->readers.size(); i += numThreads) {
-    if (args->initOnSearch) args->readers[i]->init();
+    if (args->initOnSearch) {
+      args->readers[i]->init();
+    }
     std::vector<std::pair<double, unsigned int>> r_res =
         args->readers[i]->getTverskyNeighbors(args->bv, args->ca, args->cb,
                                               args->threshold);
@@ -87,7 +89,9 @@ void tversky_helper(unsigned int threadId, unsigned int numThreads,
 void tani_helper(unsigned int threadId, unsigned int numThreads,
                  const sim_args *args) {
   for (unsigned int i = threadId; i < args->readers.size(); i += numThreads) {
-    if (args->initOnSearch) args->readers[i]->init();
+    if (args->initOnSearch) {
+      args->readers[i]->init();
+    }
     std::vector<std::pair<double, unsigned int>> r_res =
         args->readers[i]->getTanimotoNeighbors(args->bv, args->threshold);
     (*args->res)[i].clear();
@@ -157,7 +161,9 @@ void contain_helper(unsigned int threadId, unsigned int numThreads,
                     std::vector<std::vector<unsigned int>> *accum,
                     bool initOnSearch) {
   for (unsigned int i = threadId; i < readers->size(); i += numThreads) {
-    if (initOnSearch) (*readers)[i]->init();
+    if (initOnSearch) {
+      (*readers)[i]->init();
+    }
     (*accum)[i] = (*readers)[i]->getContainingNeighbors(bv);
   }
 }
@@ -193,7 +199,7 @@ void get_containing_nbrs(
   for (unsigned int i = 0; i < d_readers.size(); ++i) {
     std::vector<unsigned int> &r_res = accum[i];
     BOOST_FOREACH (unsigned int ri, r_res) {
-      res.push_back(std::make_pair(ri, i));
+      res.emplace_back(ri, i);
     }
   }
 
@@ -209,8 +215,9 @@ void MultiFPBReader::init() {
     if (!nBits) {
       nBits = rdr->nBits();
     } else {
-      if (rdr->nBits() != nBits)
+      if (rdr->nBits() != nBits) {
         throw ValueErrorException("bit lengths of child readers don't match");
+      }
     }
   }
   df_init = true;

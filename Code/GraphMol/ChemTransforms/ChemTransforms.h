@@ -68,7 +68,7 @@ RDKIT_CHEMTRANSFORMS_EXPORT ROMol *deleteSubstructs(const ROMol &mol,
     \param replaceAll  if this is true, only a single result, with all
     \param useChirality - if set, match the coreQuery using chirality
 
-   occurances
+   occurrences
                        of the substructure replaced, will be returned.
     \param replacementConnectionPoint   index of the atom in the replacement
    that
@@ -230,7 +230,8 @@ RDKIT_CHEMTRANSFORMS_EXPORT ROMol *combineMols(
 RDKIT_CHEMTRANSFORMS_EXPORT void addRecursiveQueries(
     ROMol &mol, const std::map<std::string, ROMOL_SPTR> &queries,
     const std::string &propName,
-    std::vector<std::pair<unsigned int, std::string>> *reactantLabels = NULL);
+    std::vector<std::pair<unsigned int, std::string>> *reactantLabels =
+        nullptr);
 
 //! \brief parses a query definition file and sets up a set of definitions
 //!  suitable for use by addRecursiveQueries()

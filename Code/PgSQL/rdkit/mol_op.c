@@ -261,28 +261,13 @@ Datum mol_murckoscaffold(PG_FUNCTION_ARGS) {
       searchMolCache(fcinfo->flinfo->fn_extra, fcinfo->flinfo->fn_mcxt,
                      PG_GETARG_DATUM(0), NULL, &mol, NULL);
   CROMol scaffold = MolMurckoScaffold(mol);
-  if (!scaffold) PG_RETURN_NULL();
+  if (!scaffold) {
+    PG_RETURN_NULL();
+  }
   res = deconstructROMol(scaffold);
   freeCROMol(scaffold);
 
   PG_RETURN_MOL_P(res);
-}
-
-PGDLLEXPORT Datum mol_hash(PG_FUNCTION_ARGS);
-PG_FUNCTION_INFO_V1(mol_hash);
-Datum mol_hash(PG_FUNCTION_ARGS) {
-  CROMol mol;
-  char *str;
-  int len;
-  fcinfo->flinfo->fn_extra =
-      searchMolCache(fcinfo->flinfo->fn_extra, fcinfo->flinfo->fn_mcxt,
-                     PG_GETARG_DATUM(0), NULL, &mol, NULL);
-  Assert(mol != 0);
-  str = computeMolHash(mol, &len);
-  Assert(str != 0 && strlen(str) != 0);
-  char *res = pnstrdup(str, len);
-  free((void *)str);
-  PG_RETURN_CSTRING(res);
 }
 
 PGDLLEXPORT Datum mol_nm_hash(PG_FUNCTION_ARGS);
@@ -313,7 +298,9 @@ Datum mol_adjust_query_properties(PG_FUNCTION_ARGS) {
   char *data = PG_GETARG_CSTRING(1);
 
   CROMol adj = MolAdjustQueryProperties(mol, data);
-  if (!adj) PG_RETURN_NULL();
+  if (!adj) {
+    PG_RETURN_NULL();
+  }
   Mol *res = deconstructROMol(adj);
   freeCROMol(adj);
 

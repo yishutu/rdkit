@@ -51,6 +51,9 @@ void ROMol::destroy() {
     delete dp_ringInfo;
     dp_ringInfo = nullptr;
   }
+
+  getSubstanceGroups(*this).clear();
+  d_stereo_groups.clear();
 };
 
 ROMol::ROMol(const std::string &pickle) : RDProps() {
@@ -61,7 +64,9 @@ ROMol::ROMol(const std::string &pickle) : RDProps() {
 }
 
 void ROMol::initFromOther(const ROMol &other, bool quickCopy, int confId) {
-  if (this == &other) return;
+  if (this == &other) {
+    return;
+  }
   numBonds = 0;
   // std::cerr<<"    init from other: "<<this<<" "<<&other<<std::endl;
   // copy over the atoms
@@ -79,7 +84,9 @@ void ROMol::initFromOther(const ROMol &other, bool quickCopy, int confId) {
   }
 
   // ring information
-  if (dp_ringInfo) delete dp_ringInfo;
+  if (dp_ringInfo) {
+    delete dp_ringInfo;
+  }
   if (other.dp_ringInfo) {
     dp_ringInfo = new RingInfo(*(other.dp_ringInfo));
   } else {
@@ -164,7 +171,9 @@ unsigned int ROMol::getNumAtoms(bool onlyExplicit) const {
 unsigned int ROMol::getNumHeavyAtoms() const {
   unsigned int res = 0;
   for (ConstAtomIterator ai = beginAtoms(); ai != endAtoms(); ++ai) {
-    if ((*ai)->getAtomicNum() > 1) ++res;
+    if ((*ai)->getAtomicNum() > 1) {
+      ++res;
+    }
   }
   return res;
 };
@@ -195,7 +204,6 @@ Atom *ROMol::getAtomWithBookmark(int mark) {
   PRECONDITION(d_atomBookmarks.count(mark) != 0, "atom bookmark not found");
   PRECONDITION(d_atomBookmarks[mark].begin() != d_atomBookmarks[mark].end(),
                "atom bookmark not found");
-
   return *(d_atomBookmarks[mark].begin());
 };
 
@@ -269,9 +277,9 @@ void ROMol::clearBondBookmark(int mark, const Bond *bond) {
 }
 
 unsigned int ROMol::getNumBonds(bool onlyHeavy) const {
-  // By default resturn the bonds that connect only the heavy atoms
+  // By default return the bonds that connect only the heavy atoms
   // hydrogen connecting bonds are ignores
-  int res = rdcast<int>(boost::num_edges(d_graph));
+  int res = numBonds;
   if (!onlyHeavy) {
     // If we need hydrogen connecting bonds add them up
     for (ConstAtomIterator ai = beginAtoms(); ai != endAtoms(); ++ai) {
@@ -286,7 +294,9 @@ Bond *ROMol::getBondWithIdx(unsigned int idx) {
   URANGE_CHECK(idx, getNumBonds());
 
   BOND_ITER_PAIR bIter = getEdges();
-  for (unsigned int i = 0; i < idx; i++) ++bIter.first;
+  for (unsigned int i = 0; i < idx; i++) {
+    ++bIter.first;
+  }
   Bond *res = d_graph[*(bIter.first)];
 
   POSTCONDITION(res != nullptr, "Invalid bond requested");
@@ -298,7 +308,9 @@ const Bond *ROMol::getBondWithIdx(unsigned int idx) const {
   URANGE_CHECK(idx, getNumBonds());
 
   BOND_ITER_PAIR bIter = getEdges();
-  for (unsigned int i = 0; i < idx; i++) ++bIter.first;
+  for (unsigned int i = 0; i < idx; i++) {
+    ++bIter.first;
+  }
   const Bond *res = d_graph[*(bIter.first)];
 
   POSTCONDITION(res != nullptr, "Invalid bond requested");
@@ -355,10 +367,11 @@ unsigned int ROMol::addAtom(Atom *atom_pin, bool updateLabel,
                             bool takeOwnership) {
   PRECONDITION(atom_pin, "null atom passed in");
   Atom *atom_p;
-  if (!takeOwnership)
+  if (!takeOwnership) {
     atom_p = atom_pin->copy();
-  else
+  } else {
     atom_p = atom_pin;
+  }
 
   atom_p->setOwningMol(this);
   MolGraph::vertex_descriptor which = boost::add_vertex(d_graph);
@@ -386,10 +399,11 @@ unsigned int ROMol::addBond(Bond *bond_pin, bool takeOwnership) {
                "bond already exists");
 
   Bond *bond_p;
-  if (!takeOwnership)
+  if (!takeOwnership) {
     bond_p = bond_pin->copy();
-  else
+  } else {
     bond_p = bond_pin;
+  }
 
   bond_p->setOwningMol(this);
   bool ok;
@@ -509,7 +523,9 @@ ROMol::ConstBondIterator ROMol::endBonds() const {
 
 void ROMol::clearComputedProps(bool includeRings) const {
   // the SSSR information:
-  if (includeRings) this->dp_ringInfo->reset();
+  if (includeRings) {
+    this->dp_ringInfo->reset();
+  }
 
   RDProps::clearComputedProps();
 
@@ -554,7 +570,7 @@ const Conformer &ROMol::getConformer(int id) const {
   if (id < 0) {
     return *(d_confs.front());
   }
-  unsigned int cid = (unsigned int)id;
+  auto cid = (unsigned int)id;
   for (auto ci = this->beginConformers(); ci != this->endConformers(); ++ci) {
     if ((*ci)->getId() == cid) {
       return *(*ci);
@@ -575,7 +591,7 @@ Conformer &ROMol::getConformer(int id) {
   if (id < 0) {
     return *(d_confs.front());
   }
-  unsigned int cid = (unsigned int)id;
+  auto cid = (unsigned int)id;
   for (auto ci = this->beginConformers(); ci != this->endConformers(); ++ci) {
     if ((*ci)->getId() == cid) {
       return *(*ci);

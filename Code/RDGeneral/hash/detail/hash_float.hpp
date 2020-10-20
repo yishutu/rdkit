@@ -52,10 +52,10 @@
 #endif
 
 // On OpenBSD, numeric_limits is not reliable for long doubles, but
-// the macros defined in <float.h> are.
+// the macros defined in <cfloat> are.
 
 #if defined(__OpenBSD__)
-#include <float.h>
+#include <cfloat>
 #endif
 
 namespace gboost
@@ -128,7 +128,7 @@ namespace gboost
 
             v = gboost::hash_detail::call_frexp(v, &exp);
 
-            // A postive value is easier to hash, so combine the
+            // A positive value is easier to hash, so combine the
             // sign with the exponent.
             if(v < 0) {
                 v = -v;

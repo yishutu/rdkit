@@ -87,14 +87,14 @@ std::vector<std::pair<ROMOL_SPTR, ROMOL_SPTR>> readPairs(std::istream& inStream,
   char inLine[MAX_LINE_LEN];
   std::string tmpstr;
   int nRead = 0;
-  while (!inStream.eof() && (nToRead < 0 || nRead < nToRead)) {
+  while (!inStream.eof() && !inStream.fail() && (nToRead < 0 || nRead < nToRead)) {
     inStream.getline(inLine, MAX_LINE_LEN, '\n');
     tmpstr = inLine;
     // parse the molpair on this line (if there is one)
     std::shared_ptr<std::pair<ROMol*, ROMol*>> mol_pair(getPair(tmpstr));
     if (mol_pair != nullptr) {
-      pairs.push_back(std::pair<ROMOL_SPTR, ROMOL_SPTR>(
-          ROMOL_SPTR(mol_pair->first), ROMOL_SPTR(mol_pair->second)));
+      pairs.emplace_back(
+          ROMOL_SPTR(mol_pair->first), ROMOL_SPTR(mol_pair->second));
       nRead++;
     }
   }

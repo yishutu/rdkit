@@ -19,7 +19,7 @@
 namespace RDKit {
 class ROMol;
 
-//! used to indicate errors from incorrect confomer access
+//! used to indicate errors from incorrect conformer access
 class RDKIT_GRAPHMOL_EXPORT ConformerException : public std::exception {
  public:
   //! construct with an error message
@@ -27,8 +27,8 @@ class RDKIT_GRAPHMOL_EXPORT ConformerException : public std::exception {
   //! construct with an error message
   ConformerException(const std::string &msg) : _msg(msg){};
   //! get the error message
-  const char *message() const { return _msg.c_str(); };
-  ~ConformerException() throw(){};
+  const char *what() const noexcept override { return _msg.c_str(); };
+  ~ConformerException() noexcept {};
 
  private:
   std::string _msg;
@@ -45,10 +45,10 @@ class RDKIT_GRAPHMOL_EXPORT Conformer : public RDProps {
   friend class ROMol;
 
   //! Constructor
-  Conformer() : df_is3D(true), d_id(0), dp_mol(NULL) { d_positions.clear(); };
+  Conformer() { d_positions.clear(); };
 
   //! Constructor with number of atoms specified ID specification
-  Conformer(unsigned int numAtoms) : df_is3D(true), d_id(0), dp_mol(NULL) {
+  Conformer(unsigned int numAtoms) {
     if (numAtoms) {
       d_positions.resize(numAtoms, RDGeom::Point3D(0.0, 0.0, 0.0));
     } else {
@@ -129,16 +129,16 @@ class RDKIT_GRAPHMOL_EXPORT Conformer : public RDProps {
   inline void set3D(bool v) { df_is3D = v; }
 
  protected:
-  //! Set owning moelcule
+  //! Set owning molecule
   void setOwningMol(ROMol *mol);
 
-  //! Set owning moelcule
+  //! Set owning molecule
   void setOwningMol(ROMol &mol);
 
  private:
-  bool df_is3D;                      // is this a 3D conformation?
-  unsigned int d_id;                 // id is the conformation
-  ROMol *dp_mol;                     // owning molecule
+  bool df_is3D{true};                // is this a 3D conformation?
+  unsigned int d_id{0};              // id is the conformation
+  ROMol *dp_mol{nullptr};            // owning molecule
   RDGeom::POINT3D_VECT d_positions;  // positions of the atoms
   void initFromOther(const Conformer &conf);
 };

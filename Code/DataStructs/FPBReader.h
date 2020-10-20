@@ -58,11 +58,8 @@ struct FPBReader_impl;
 class RDKIT_DATASTRUCTS_EXPORT FPBReader {
  public:
   FPBReader()
-      : dp_istrm(NULL),
-        dp_impl(NULL),
-        df_owner(false),
-        df_init(false),
-        df_lazyRead(false){};
+      
+        {};
   //! ctor for reading from a named file
   /*!
   \param fname the name of the file to reads
@@ -91,20 +88,20 @@ class RDKIT_DATASTRUCTS_EXPORT FPBReader {
   FPBReader(std::istream *inStream, bool takeOwnership = true,
             bool lazyRead = false)
       : dp_istrm(inStream),
-        dp_impl(NULL),
+        dp_impl(nullptr),
         df_owner(takeOwnership),
         df_init(false),
         df_lazyRead(lazyRead){};
   ~FPBReader() {
     destroy();
     if (df_owner) delete dp_istrm;
-    dp_istrm = NULL;
+    dp_istrm = nullptr;
     df_init = false;
   };
 
   //! Read the data from the file and initialize internal data structures
   /*!
-  This must be called before most of the other methods of this clases.
+  This must be called before most of the other methods of this class.
 
   Some notes:
   \li if \c lazyRead is not set, all fingerprints will be read into memory. This
@@ -248,11 +245,11 @@ class RDKIT_DATASTRUCTS_EXPORT FPBReader {
       const ExplicitBitVect &ebv) const;
 
  private:
-  std::istream *dp_istrm;
-  detail::FPBReader_impl *dp_impl;  // implementation details
-  bool df_owner;
-  bool df_init;
-  bool df_lazyRead;
+  std::istream *dp_istrm{nullptr};
+  detail::FPBReader_impl *dp_impl{nullptr};  // implementation details
+  bool df_owner{false};
+  bool df_init{false};
+  bool df_lazyRead{false};
 
   // disable automatic copy constructors and assignment operators
   // for this class and its subclasses.  They will likely be
@@ -271,7 +268,7 @@ class RDKIT_DATASTRUCTS_EXPORT FPBReader {
       throw BadFileException(errout.str());
     }
     dp_istrm = tmpStream;
-    dp_impl = NULL;
+    dp_impl = nullptr;
     df_owner = true;
     df_init = false;
     df_lazyRead = lazyRead;

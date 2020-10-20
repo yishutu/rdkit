@@ -171,8 +171,8 @@ class Canvas:
     """PDF escapes are like Python ones, but brackets need slashes before them too.
         Use Python's repr function and chop off the quotes first"""
     s = repr(s)[1:-1]
-    s = s.replace('(', '\(')
-    s = s.replace(')', '\)')
+    s = s.replace('(', r'\(')
+    s = s.replace(')', r'\)')
     return s
 
   #info functions - non-standard
@@ -1015,7 +1015,7 @@ class PDFTextObject:
 
   def textLines(self, stuff, trim=1):
     """prints multi-line or newlined strings, moving down.  One
-        comon use is to quote a multi-line block in your Python code;
+        common use is to quote a multi-line block in your Python code;
         since this may be indented, by default it trims whitespace
         off each line and from the beginning; set trim=0 to preserve
         whitespace."""

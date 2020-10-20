@@ -36,9 +36,10 @@ namespace {
   boost::python::tuple MolToInchi(const RDKit::ROMol &mol, std::string options)
   {
     RDKit::ExtraInchiReturnValues rv;
-    const char* _options = NULL;
-    if (options.size())
+    const char* _options = nullptr;
+    if (options.size()) {
       _options = options.c_str();
+    }
     std::string inchi = RDKit::MolToInchi(mol, rv, _options);
     return boost::python::make_tuple(inchi, rv.returnCode, rv.messagePtr, rv.logPtr,
                                      rv.auxInfoPtr);
@@ -47,9 +48,10 @@ namespace {
   boost::python::tuple MolBlockToInchi(const std::string &molblock, std::string options)
   {
     RDKit::ExtraInchiReturnValues rv;
-    const char* _options = NULL;
-    if (options.size())
+    const char* _options = nullptr;
+    if (options.size()) {
       _options = options.c_str();
+    }
     std::string inchi = RDKit::MolBlockToInchi(molblock, rv, _options);
     return boost::python::make_tuple(inchi, rv.returnCode, rv.messagePtr, rv.logPtr,
                                      rv.auxInfoPtr);
@@ -59,10 +61,10 @@ namespace {
   {
     RDKit::ExtraInchiReturnValues rv;
     RDKit::ROMol* mol = RDKit::InchiToMol(inchi, rv, sanitize, removeHs);
-    if (mol == NULL)
+    if (mol == nullptr) {
       return boost::python::make_tuple(boost::python::object(), rv.returnCode,
                                        rv.messagePtr, rv.logPtr);
-    else {
+    } else {
       return boost::python::make_tuple(RDKit::ROMOL_SPTR(mol), rv.returnCode,
                                        rv.messagePtr, rv.logPtr);
     }
@@ -139,9 +141,9 @@ BOOST_PYTHON_MODULE(rdinchi) {
     - options: the InChI generation options.\n\
       Options should be prefixed with either a - or a /\n\
       Available options are explained in the InChI technical FAQ:\n\
-      http://www.inchi-trust.org/fileadmin/user_upload/html/inchifaq/inchi-faq.html#15.14\n\
-      and the User Guide:\n\
-      http://www.inchi-trust.org/fileadmin/user_upload/software/inchi-v1.04/InChI_UserGuide.pdf\n\
+      https://www.inchi-trust.org/technical-faq-2/#15.14\n\
+      and the User Guide available from:\n\
+      https://www.inchi-trust.org/downloads/\n\
   Returns: the InChI key\n";
   boost::python::def("MolToInchiKey", RDKit::MolToInchiKey,
                      (boost::python::arg("mol"),

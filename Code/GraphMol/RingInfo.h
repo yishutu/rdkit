@@ -34,7 +34,7 @@ class RDKIT_GRAPHMOL_EXPORT RingInfo {
   typedef std::vector<int> INT_VECT;
   typedef std::vector<INT_VECT> VECT_INT_VECT;
 
-  RingInfo() : df_init(false){};
+  RingInfo()  {};
   RingInfo(const RingInfo &other)
       : df_init(other.df_init),
         d_atomMembers(other.d_atomMembers),
@@ -74,6 +74,12 @@ class RDKIT_GRAPHMOL_EXPORT RingInfo {
   //! \name Atom information
   //@{
 
+  //! returns a vector with sizes of the rings that atom with index \c idx is in.
+  /*!
+    <b>Notes:</b>
+      - the object must be initialized before calling this
+  */
+  INT_VECT atomRingSizes(unsigned int idx) const;
   //! returns whether or not the atom with index \c idx is in a \c size - ring.
   /*!
     <b>Notes:</b>
@@ -105,6 +111,12 @@ class RDKIT_GRAPHMOL_EXPORT RingInfo {
   //! \name Bond information
   //@{
 
+  //! returns a vector with sizes of the rings that bond with index \c idx is in.
+  /*!
+    <b>Notes:</b>
+      - the object must be initialized before calling this
+  */
+  INT_VECT bondRingSizes(unsigned int idx) const;
   //! returns whether or not the bond with index \c idx is in a \c size - ring.
   /*!
     <b>Notes:</b>
@@ -186,7 +198,7 @@ class RDKIT_GRAPHMOL_EXPORT RingInfo {
   const VECT_INT_VECT &bondRingFamilies() const { return d_bondRingFamilies; };
 
   //! check if the ring families have been initialized
-  bool areRingFamiliesInitialized() const { return dp_urfData != NULL; }
+  bool areRingFamiliesInitialized() const { return dp_urfData != nullptr; }
 #endif
 
   //@}
@@ -195,7 +207,7 @@ class RDKIT_GRAPHMOL_EXPORT RingInfo {
   //! pre-allocates some memory to save time later
   void preallocate(unsigned int numAtoms, unsigned int numBonds);
 
-  bool df_init;
+  bool df_init{false};
   DataType d_atomMembers, d_bondMembers;
   VECT_INT_VECT d_atomRings, d_bondRings;
   VECT_INT_VECT d_atomRingFamilies, d_bondRingFamilies;

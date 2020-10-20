@@ -31,6 +31,7 @@ std::string _version() { return "$Id$"; }
 
 void EnableLog(std::string spec) { logging::enable_logs(spec); }
 void DisableLog(std::string spec) { logging::disable_logs(spec); }
+std::string LogStatus() { return logging::log_status(); }
 void AttachFileToLog(std::string spec, std::string filename, int delay = 100) {
   (void)spec;
   (void)filename;
@@ -122,6 +123,8 @@ BOOST_PYTHON_MODULE(rdBase) {
       &translate_index_error);
   python::register_exception_translator<ValueErrorException>(
       &translate_value_error);
+  python::register_exception_translator<KeyErrorException>(
+      &translate_key_error);
 
 #if INVARIANT_EXCEPTION_METHOD
   python::register_exception_translator<Invar::Invariant>(
@@ -137,6 +140,8 @@ BOOST_PYTHON_MODULE(rdBase) {
 
   python::def("EnableLog", EnableLog);
   python::def("DisableLog", DisableLog);
+  python::def("LogStatus", LogStatus);
+
   python::def("AttachFileToLog", AttachFileToLog,
               "Causes the log to write to a file",
               (python::arg("spec"), python::arg("filename"),
@@ -151,4 +156,9 @@ BOOST_PYTHON_MODULE(rdBase) {
 
   python_streambuf_wrapper::wrap();
   python_ostream_wrapper::wrap();
+  
+  python::class_<RDLog::BlockLogs,boost::noncopyable>(
+	       "BlockLogs",
+	       "Temporarily block logs from outputting while this instance is in scope.");
+			    
 }
