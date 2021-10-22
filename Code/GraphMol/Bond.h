@@ -326,9 +326,9 @@ class RDKIT_GRAPHMOL_EXPORT Bond : public RDProps {
 
  protected:
   //! sets our owning molecule
-  // void setOwningMol(ROMol *other);
+  /// void setOwningMol(ROMol *other);
   //! sets our owning molecule
-  // void setOwningMol(ROMol &other) { setOwningMol(&other); }
+  /// void setOwningMol(ROMol &other) { setOwningMol(&other); }
   bool df_isAromatic;
   bool df_isConjugated;
   std::uint8_t d_bondType;
@@ -344,7 +344,7 @@ class RDKIT_GRAPHMOL_EXPORT Bond : public RDProps {
 
 //! returns twice the \c bondType
 //! (e.g. SINGLE->2, AROMATIC->3, etc.)
-uint8_t getTwiceBondType(const RDKit::Bond &b);
+RDKIT_GRAPHMOL_EXPORT extern uint8_t getTwiceBondType(const RDKit::Bond &b);
 
 };  // namespace RDKit
 
