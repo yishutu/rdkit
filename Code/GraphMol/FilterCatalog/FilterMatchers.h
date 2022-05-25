@@ -39,11 +39,19 @@
 #include "FilterMatcherBase.h"
 #include <GraphMol/MolPickler.h>
 
+#ifdef RDK_USE_BOOST_SERIALIZATION
+#include <RDGeneral/BoostStartInclude.h>
+#include <boost/serialization/shared_ptr.hpp>
+#include <RDGeneral/BoostEndInclude.h>
+#endif
+
 namespace RDKit {
 
 namespace {
 std::string getArgName(const boost::shared_ptr<FilterMatcherBase> &arg) {
-  if (arg.get()) return arg->getName();
+  if (arg.get()) {
+    return arg->getName();
+  }
   return "<nullmatcher>";
 }
 }  // namespace
@@ -348,12 +356,10 @@ class RDKIT_FILTERCATALOG_EXPORT SmartsMatcher : public FilterMatcherBase {
   template <class Archive>
   void load(Archive &ar, const unsigned int version) {
     ar &boost::serialization::base_object<FilterMatcherBase>(*this);
-    {
-      RDUNUSED_PARAM(version);
-      std::string res;
-      ar &res;
-      d_pattern = boost::shared_ptr<ROMol>(new ROMol(res));
-    }
+    RDUNUSED_PARAM(version);
+    std::string res;
+    ar &res;
+    d_pattern = boost::shared_ptr<ROMol>(new ROMol(res));
     ar &d_min_count;
     ar &d_max_count;
   }
@@ -403,8 +409,11 @@ class RDKIT_FILTERCATALOG_EXPORT ExclusionList : public FilterMatcherBase {
   }
 
   bool isValid() const override {
-    for (size_t i = 0; i < d_offPatterns.size(); ++i)
-      if (!d_offPatterns[i]->isValid()) return false;
+    for (size_t i = 0; i < d_offPatterns.size(); ++i) {
+      if (!d_offPatterns[i]->isValid()) {
+        return false;
+      }
+    }
     return true;
   }
 

@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2003-2018 Greg Landrum and Rational Discovery LLC
+//  Copyright (C) 2003-2021 Greg Landrum and other RDKit contributors
 //
 //   @@ All Rights Reserved @@
 //  This file is part of the RDKit.
@@ -113,7 +113,24 @@ void testPass() {
     "C%(1000)CC(C%(1000))",  // github #2909
     "C%(1000)CC.C%(1000)",   // github #2909
     "[C;d2]",                // non-hydrogen degree
-
+    "C$C",                   // quadruple bonds
+    // extended chirality
+    "C[Fe@TH](O)(Cl)F",
+    "C[Fe@TH1](O)(Cl)F",
+    "C[Fe@SP](O)(Cl)F",
+    "C[Fe@SP1](O)(Cl)F",
+    "C[Fe@TB](O)(Cl)(Br)F",
+    "C[Fe@TB20](O)(Cl)(Br)F",
+    "C[Fe@OH](O)(Cl)(Br)(N)F",
+    "C[Fe@OH20](O)(Cl)(Br)(N)F",
+    "[@TH]",
+    "[@TH1]",
+    "[@SP]",
+    "[@SP1]",
+    "[@TB]",
+    "[@TB10]",
+    "[@OH]",
+    "[@OH20]",
     "EOS"
   };
   while (smis[i] != "EOS") {
@@ -2681,7 +2698,7 @@ void testGithub2142() {
     std::unique_ptr<ROMol> m1(SmartsToMol(smarts));
     TEST_ASSERT(m1);
     auto csma1 = MolToSmarts(*m1);
-    TEST_ASSERT(csma1 == "[C;H1&$(C(-,:[#6])[#6]),H2&$(C[#6])]");
+    TEST_ASSERT(csma1 == "[C;H1&$(C([#6])[#6]),H2&$(C[#6])]");
   }
 
   {  // a second one from the issue

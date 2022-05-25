@@ -13,11 +13,14 @@
 #include <QPainterPath>
 
 namespace RDKit {
+namespace MolDraw2D_detail {
 
 // ****************************************************************************
 DrawTextFTQt::DrawTextFTQt(double max_fnt_sz, double min_fnt_sz,
                            const std::string &font_file, QPainter *qp)
     : DrawTextFT(max_fnt_sz, min_fnt_sz, font_file), d_qp(qp) {}
+
+DrawTextFTQt::~DrawTextFTQt() = default;
 
 // ****************************************************************************
 double DrawTextFTQt::extractOutline() {
@@ -103,4 +106,5 @@ int DrawTextFTQt::CubicToFunctionImpl(const FT_Vector *controlOne,
   return 0;
 }
 
+}  // namespace MolDraw2D_detail
 }  // namespace RDKit

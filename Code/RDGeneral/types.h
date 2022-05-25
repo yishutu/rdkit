@@ -133,6 +133,7 @@ RDKIT_RDGENERAL_EXPORT extern const std::string
     _ringStereochemCand;  // chirality bool COMPUTED
 RDKIT_RDGENERAL_EXPORT extern const std::string
     _ringStereoWarning;  // obsolete ?
+RDKIT_RDGENERAL_EXPORT extern const std::string _chiralPermutation; // int
 
 // Smiles parsing
 RDKIT_RDGENERAL_EXPORT extern const std::string _SmilesStart;  // int
@@ -189,6 +190,9 @@ RDKIT_RDGENERAL_EXPORT extern const std::string
 RDKIT_RDGENERAL_EXPORT extern const std::string
     MRV_SMA;  // smarts string from Marvin
 RDKIT_RDGENERAL_EXPORT extern const std::string dummyLabel;  // atom string
+
+RDKIT_RDGENERAL_EXPORT extern const std::string
+    _QueryAtomGenericLabel;  // string
 
 // Reaction Information (Reactions.cpp)
 RDKIT_RDGENERAL_EXPORT extern const std::string _QueryFormalCharge;  //  int

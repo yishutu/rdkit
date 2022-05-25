@@ -9,6 +9,10 @@
 //
 
 #include "catch.hpp"
+#ifdef RDK_THREADSAFE_SSS
+#include <future>
+#include <thread>
+#endif
 
 #include <GraphMol/RDKitBase.h>
 #include <GraphMol/MolPickler.h>
@@ -255,10 +259,10 @@ TEST_CASE("github #2257: writing cxsmiles", "[smiles][cxsmiles]") {
     CHECK(smi == "CN |$_AV:val1;val2$,atomProp:0.p2.v2:1.p1.v1|");
   }
   SECTION("enhanced stereo 1") {
-    auto mol = "C[C@H](F)[C@H](C)[C@@H](C)Br |a:1,o1:4,5|"_smiles;
+    auto mol = "C[C@H](F)[C@H](C)[C@@H](C)Br |a:1,o1:3,5|"_smiles;
     REQUIRE(mol);
     auto smi = MolToCXSmiles(*mol);
-    CHECK(smi == "C[C@H](F)[C@H](C)[C@@H](C)Br |a:1,o1:4,5|");
+    CHECK(smi == "C[C@H](F)[C@H](C)[C@@H](C)Br |a:1,o1:3,5|");
   }
 
   SECTION("enhanced stereo 2") {
@@ -948,8 +952,8 @@ TEST_CASE("Github #4319 add CXSMARTS support") {
     auto mol = "[#6][C@]([#8])(F)Cl |&1:1|"_smarts;
     REQUIRE(mol);
     REQUIRE(mol->getNumAtoms() == 5);
-    CHECK(MolToSmarts(*mol) == "[#6][C@](-,:[#8])(-,:F)Cl");
-    CHECK(MolToCXSmarts(*mol) == "[#6][C@](-,:[#8])(-,:F)Cl |&1:1|");
+    CHECK(MolToSmarts(*mol) == "[#6][C@]([#8])(F)Cl");
+    CHECK(MolToCXSmarts(*mol) == "[#6][C@]([#8])(F)Cl |&1:1|");
 
     {
       auto smol = "C[C@](O)(F)Cl |&1:1|"_smiles;
@@ -974,19 +978,17 @@ TEST_CASE("Github #4319 add CXSMARTS support") {
       auto mol = "C[C@H]([F,Cl,Br])[C@H](C)[C@@H](C)Br"_smarts;
       REQUIRE(mol);
       CHECK(mol->getAtomWithIdx(2)->getQuery()->getDescription() == "AtomOr");
-      CHECK(MolToSmarts(*mol) ==
-            "C[C@&H1](-,:[F,Cl,Br])[C@&H1](-,:C)[C@@&H1](-,:C)Br");
+      CHECK(MolToSmarts(*mol) == "C[C@&H1]([F,Cl,Br])[C@&H1](C)[C@@&H1](C)Br");
       CHECK(MolToCXSmarts(*mol) ==
-            "C[C@&H1](-,:[F,Cl,Br])[C@&H1](-,:C)[C@@&H1](-,:C)Br");
+            "C[C@&H1]([F,Cl,Br])[C@&H1](C)[C@@&H1](C)Br");
     }
     {  // make sure that doesn't break anything
       auto mol = "C[C@H]([F,Cl,Br])[C@H](C)[C@@H](C)Br |a:1,o1:4,5|"_smarts;
       REQUIRE(mol);
       CHECK(mol->getAtomWithIdx(2)->getQuery()->getDescription() == "AtomOr");
-      CHECK(MolToSmarts(*mol) ==
-            "C[C@&H1](-,:[F,Cl,Br])[C@&H1](-,:C)[C@@&H1](-,:C)Br");
+      CHECK(MolToSmarts(*mol) == "C[C@&H1]([F,Cl,Br])[C@&H1](C)[C@@&H1](C)Br");
       CHECK(MolToCXSmarts(*mol) ==
-            "C[C@&H1](-,:[F,Cl,Br])[C@&H1](-,:C)[C@@&H1](-,:C)Br |a:1,o1:4,5|");
+            "C[C@&H1]([F,Cl,Br])[C@&H1](C)[C@@&H1](C)Br |a:1,o1:4,5|");
     }
   }
 }
@@ -1256,7 +1258,6 @@ TEST_CASE("SGroup hierarchy") {
           "|$star_e;;;;;star_e;;star_e$,,,Sg:any:2,1::ht:::,Sg:any:4,3,2,1,0,6:"
           ":ht:::,SgH:1:0|");
   }
-
   SECTION("nested") {
     auto mol =
         "*-CNC(CC(-*)C-*)O-* "
@@ -1429,6 +1430,26 @@ TEST_CASE("Github #4320: Support toggling components of CXSMILES output") {
   }
 }
 
+TEST_CASE("non-tetrahedral chirality") {
+  SECTION("allowed values") {
+    {
+      auto m = "C[Fe@SP3](Cl)(F)N"_smiles;
+      REQUIRE(m);
+      CHECK(m->getAtomWithIdx(1)->getChiralTag() ==
+            Atom::ChiralType::CHI_SQUAREPLANAR);
+      CHECK(m->getAtomWithIdx(1)->getProp<unsigned int>(
+                common_properties::_chiralPermutation) == 3);
+    }
+    {
+      auto m = "C[Fe@SP3](Cl)(F)N"_smiles;
+      REQUIRE(m);
+      CHECK(m->getAtomWithIdx(1)->getChiralTag() ==
+            Atom::ChiralType::CHI_SQUAREPLANAR);
+      CHECK(m->getAtomWithIdx(1)->getProp<unsigned int>(
+                common_properties::_chiralPermutation) == 3);
+    }
+  }
+}
 TEST_CASE(
     "Github #4503: MolFromSmiles and MolFromSmarts incorrectly accepting input "
     "with spaces") {
@@ -1845,5 +1866,133 @@ M  END)CTAB"_ctab;
         "CC(=O)N[C@@H](CCCC/N=C/C1=C/"
         "C[C@H]2[C@@]3(CC[C@]2(C)C[C@H]2[C@@H]1C(=O)C[C@@]2(C)O)O[C@@H](C=C(C)"
         "C)C[C@@H]3C)C(=O)O");
+  }
+}
+
+TEST_CASE(
+    "unspecified bonds at beginning of branch in SMARTS not properly tagged") {
+  auto m = "C(C)C"_smarts;
+  REQUIRE(m);
+  CHECK(m->getBondWithIdx(0)->getQuery()->getDescription() ==
+        "SingleOrAromaticBond");
+  CHECK(m->getBondWithIdx(1)->getQuery()->getDescription() ==
+        "SingleOrAromaticBond");
+}
+
+TEST_CASE("Github #4878: cannot parse coordinate bonds from CXSMARTS",
+          "[cxsmiles]") {
+  SECTION("basics") {
+    auto m = "[Fe]OC |C:1.0|"_smarts;
+    REQUIRE(m);
+    CHECK(m->getBondWithIdx(0)->getBondType() == Bond::BondType::DATIVE);
+  }
+  SECTION("branches") {
+    {
+      auto m = "[Fe](O)OC |C:2.1|"_smarts;
+      REQUIRE(m);
+      CHECK(m->getBondWithIdx(1)->getBondType() == Bond::BondType::DATIVE);
+    }
+    {
+      auto m = "[Fe](OC)O |C:1.0|"_smarts;
+      REQUIRE(m);
+      CHECK(m->getBondWithIdx(0)->getBondType() == Bond::BondType::DATIVE);
+    }
+  }
+  SECTION("rings") {
+    {
+      auto m = "O1CC[Fe]1 |C:0.3|"_smarts;
+      REQUIRE(m);
+      CHECK(m->getBondBetweenAtoms(0, 3)->getBondType() ==
+            Bond::BondType::DATIVE);
+    }
+  }
+}
+
+TEST_CASE("Github #4981: Invalid SMARTS for negated single-atoms", "[smarts]") {
+  SECTION("basics") {
+    auto mol = "[!C]"_smarts;
+    REQUIRE(mol);
+    CHECK(SmartsWrite::GetAtomSmarts(mol->getAtomWithIdx(0)) == "[!C]");
+  }
+  SECTION("as reported") {
+    auto mol = "[NX3H2+0,NX4H3+;!$([N][!C]);!$([N]*~[#7,#8,#15,#16])]"_smarts;
+    REQUIRE(mol);
+    CHECK(MolToSmarts(*mol).find("N!C") == std::string::npos);
+  }
+}
+
+#ifdef RDK_THREADSAFE_SSS
+namespace {
+void runblock(const ROMol *mol) { MolToSmiles(*mol); }
+}  // namespace
+
+TEST_CASE("Github #5245: Multithreaded smiles testing") {
+  SECTION("smiles from the same molecule") {
+    auto mol = "CCCCCCCCC"_smiles;
+    REQUIRE(mol);
+    std::vector<std::future<void>> tg;
+    unsigned int count = 100;
+    for (unsigned int i = 0; i < count; ++i) {
+      tg.emplace_back(std::async(std::launch::async, runblock, mol.get()));
+    }
+    for (auto &fut : tg) {
+      fut.get();
+    }
+    tg.clear();
+  }
+}
+#endif
+
+TEST_CASE("Pol and Mod atoms in CXSMILES", "[cxsmiles]") {
+  SECTION("Pol basics") {
+    auto mol = "CC* |$;;Pol_p$|"_smiles;
+    REQUIRE(mol);
+    std::string val;
+    CHECK(mol->getAtomWithIdx(2)->getPropIfPresent(
+        common_properties::dummyLabel, val));
+    CHECK(val == "Pol");
+    auto smi = MolToCXSmiles(*mol);
+    CHECK(smi == "*CC |$Pol_p;;$|");
+  }
+  SECTION("Mod basics") {
+    auto mol = "CC* |$;;Mod_p$|"_smiles;
+    REQUIRE(mol);
+    std::string val;
+    CHECK(mol->getAtomWithIdx(2)->getPropIfPresent(
+        common_properties::dummyLabel, val));
+    CHECK(val == "Mod");
+    auto smi = MolToCXSmiles(*mol);
+    CHECK(smi == "*CC |$Mod_p;;$|");
+  }
+}
+
+TEST_CASE("empty atom label block", "[cxsmiles]") {
+  SECTION("basics") {
+    auto m = R"CTAB(
+  MJ201100                      
+
+  8  8  0  0  0  0  0  0  0  0999 V2000
+   -1.0491    1.5839    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.7635    1.1714    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.7635    0.3463    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.0491   -0.0661    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.3346    0.3463    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.3346    1.1714    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.3798    1.5839    0.0000 R#  0  0  0  0  0  0  0  0  0  0  0  0
+    0.3798   -0.0661    0.0000 R#  0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  2  0  0  0  0
+  2  3  1  0  0  0  0
+  3  4  2  0  0  0  0
+  4  5  1  0  0  0  0
+  5  6  2  0  0  0  0
+  6  1  1  0  0  0  0
+  6  7  1  0  0  2  0
+  5  8  1  0  0  2  0
+M  RGP  2   7   1   8   2
+M  END)CTAB"_ctab;
+    REQUIRE(m);
+    m->clearConformers();
+    auto smi = MolToCXSmiles(*m);
+    CHECK(smi.find("$") == std::string::npos);
   }
 }

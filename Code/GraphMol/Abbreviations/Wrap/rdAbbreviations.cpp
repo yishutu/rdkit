@@ -25,8 +25,10 @@ ROMol *condenseMolAbbreviationsHelper(const ROMol *mol,
   RWMol *res = new RWMol(*mol);
   auto abbrevs =
       pythonObjectToVect<Abbreviations::AbbreviationDefinition>(pyabbrevs);
-  Abbreviations::condenseMolAbbreviations(*res, *abbrevs, maxCoverage,
-                                          sanitize);
+  if (abbrevs) {
+    Abbreviations::condenseMolAbbreviations(*res, *abbrevs, maxCoverage,
+                                            sanitize);
+  }
   return rdcast<ROMol *>(res);
 }
 
@@ -41,7 +43,9 @@ ROMol *labelMolAbbreviationsHelper(const ROMol *mol, python::object pyabbrevs,
   RWMol *res = new RWMol(*mol);
   auto abbrevs =
       pythonObjectToVect<Abbreviations::AbbreviationDefinition>(pyabbrevs);
-  Abbreviations::labelMolAbbreviations(*res, *abbrevs, maxCoverage);
+  if (abbrevs) {
+    Abbreviations::labelMolAbbreviations(*res, *abbrevs, maxCoverage);
+  }
   return rdcast<ROMol *>(res);
 }
 }  // namespace
@@ -95,6 +99,6 @@ BOOST_PYTHON_MODULE(rdAbbreviations) {
       "CondenseAbbreviationSubstanceGroups", &condenseAbbreviationSGroupHelper,
       (python::arg("mol")),
       python::return_value_policy<python::manage_new_object>(),
-      "Finds and replaces abbrevation (i.e. \"SUP\") substance groups in a "
+      "Finds and replaces abbreviation (i.e. \"SUP\") substance groups in a "
       "molecule. The result is not sanitized.");
 }

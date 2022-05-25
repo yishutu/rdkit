@@ -85,6 +85,7 @@ const std::string _queryRootAtom = "_queryRootAtom";
 const std::string _ringStereoAtoms = "_ringStereoAtoms";
 const std::string _ringStereoWarning = "_ringStereoWarning";
 const std::string _ringStereochemCand = "_ringStereochemCand";
+const std::string _chiralPermutation = "_chiralPermutation";
 const std::string _smilesAtomOutputOrder = "_smilesAtomOutputOrder";
 const std::string _smilesBondOutputOrder = "_smilesBondOutputOrder";
 const std::string _starred = "_starred";
@@ -128,6 +129,8 @@ const std::string molNote = "molNote";
 const std::string atomNote = "atomNote";
 const std::string bondNote = "bondNote";
 const std::string _isotopicHs = "_isotopicHs";
+
+const std::string _QueryAtomGenericLabel = "_QueryAtomGenericLabel";
 
 // molecule drawing
 const std::string _displayLabel = "_displayLabel";

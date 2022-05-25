@@ -24,10 +24,14 @@ using namespace std;
 
 namespace RDKit {
 
+const char *rdkitQtVersion = RDK_QT_VERSION;
+
 // ****************************************************************************
 MolDraw2DQt::MolDraw2DQt(int width, int height, QPainter *qp, int panelWidth,
                          int panelHeight, bool noFreetype)
     : MolDraw2D(width, height, panelWidth, panelHeight), d_qp(qp) {
+  PRECONDITION(width > 0, "bad width");
+  PRECONDITION(height > 0, "bad height");
   initDrawing();
   initTextDrawer(noFreetype);
 }
@@ -40,21 +44,27 @@ void MolDraw2DQt::initTextDrawer(bool noFreetype) {
   double min_fnt_sz = drawOptions().minFontSize;
 
   if (noFreetype) {
-    text_drawer_.reset(new DrawTextQt(max_fnt_sz, min_fnt_sz, d_qp));
+    text_drawer_.reset(
+        new MolDraw2D_detail::DrawTextQt(max_fnt_sz, min_fnt_sz, d_qp));
   } else {
 #ifdef RDK_BUILD_FREETYPE_SUPPORT
     try {
-      text_drawer_.reset(new DrawTextFTQt(max_fnt_sz, min_fnt_sz,
-                                          drawOptions().fontFile, d_qp));
+      text_drawer_.reset(new MolDraw2D_detail::DrawTextFTQt(
+          max_fnt_sz, min_fnt_sz, drawOptions().fontFile, d_qp));
     } catch (std::runtime_error &e) {
       BOOST_LOG(rdWarningLog)
           << e.what() << std::endl
           << "Falling back to native Qt text handling." << std::endl;
-      text_drawer_.reset(new DrawTextQt(max_fnt_sz, min_fnt_sz, d_qp));
+      text_drawer_.reset(
+          new MolDraw2D_detail::DrawTextQt(max_fnt_sz, min_fnt_sz, d_qp));
     }
 #else
-    text_drawer_.reset(new DrawTextQt(max_fnt_sz, min_fnt_sz, d_qp));
+    text_drawer_.reset(
+        new MolDraw2D_detail::DrawTextQt(max_fnt_sz, min_fnt_sz, d_qp));
 #endif
+  }
+  if (drawOptions().baseFontSize > 0.0) {
+    text_drawer_->setBaseFontSize(drawOptions().baseFontSize);
   }
 }
 
@@ -74,9 +84,10 @@ void MolDraw2DQt::setColour(const DrawColour &col) {
 }
 
 // ****************************************************************************
-void MolDraw2DQt::drawLine(const Point2D &cds1, const Point2D &cds2) {
-  Point2D c1 = getDrawCoords(cds1);
-  Point2D c2 = getDrawCoords(cds2);
+void MolDraw2DQt::drawLine(const Point2D &cds1, const Point2D &cds2,
+                           bool rawCoords) {
+  Point2D c1 = rawCoords ? cds1 : getDrawCoords(cds1);
+  Point2D c2 = rawCoords ? cds2 : getDrawCoords(cds2);
 
   const DashPattern &dashes = dash();
   QPen pen = d_qp->pen();
@@ -86,8 +97,9 @@ void MolDraw2DQt::drawLine(const Point2D &cds1, const Point2D &cds2) {
     pen.setDashPattern(dd);
   } else {
     pen.setStyle(Qt::SolidLine);
+    pen.setCapStyle(Qt::FlatCap);
   }
-  pen.setWidth(lineWidth());
+  pen.setWidth(getDrawLineWidth());
   d_qp->setPen(pen);
   d_qp->drawLine(QPointF(c1.x, c1.y), QPointF(c2.x, c2.y));
 }
@@ -102,7 +114,7 @@ void MolDraw2DQt::drawChar(char c, const Point2D &cds) {
 }
 
 // ****************************************************************************
-void MolDraw2DQt::drawPolygon(const vector<Point2D> &cds) {
+void MolDraw2DQt::drawPolygon(const vector<Point2D> &cds, bool rawCoords) {
   PRECONDITION(cds.size() >= 3, "must have at least three points");
   d_qp->save();
   QBrush brush = d_qp->brush();
@@ -114,7 +126,7 @@ void MolDraw2DQt::drawPolygon(const vector<Point2D> &cds) {
 
   QPointF *points = new QPointF[cds.size()];
   for (unsigned int i = 0; i < cds.size(); ++i) {
-    Point2D lc = getDrawCoords(cds[i]);
+    Point2D lc = rawCoords ? cds[i] : getDrawCoords(cds[i]);
     points[i] = QPointF(lc.x, lc.y);
   }
   d_qp->drawConvexPolygon(points, cds.size());

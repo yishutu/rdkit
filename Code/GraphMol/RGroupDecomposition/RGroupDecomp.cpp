@@ -39,8 +39,6 @@
 #include <GraphMol/SmilesParse/SmartsWrite.h>
 #include <GraphMol/SmilesParse/SmilesParse.h>
 #include <GraphMol/ChemTransforms/ChemTransforms.h>
-#include <GraphMol/FMCS/FMCS.h>
-#include <boost/scoped_ptr.hpp>
 #include <boost/dynamic_bitset.hpp>
 #include <set>
 #include <utility>
@@ -61,6 +59,7 @@ const std::string SIDECHAIN_RLABELS = "sideChainRlabels";
 const std::string done = "RLABEL_PROCESSED";
 const std::string CORE = "Core";
 const std::string RPREFIX = "R";
+const std::string _rgroupInputDummy = "_rgroupInputDummy";
 
 namespace {
 void ADD_MATCH(R_DECOMP &match, int rlabel) {
@@ -89,6 +88,19 @@ int RGroupDecomposition::add(const ROMol &inmol) {
   const bool addCoords = true;
   MolOps::addHs(mol, explicitOnly, addCoords);
 
+  // mark any wildcards in input molecule:
+  for (auto &atom : mol.atoms()) {
+    if (atom->getAtomicNum() == 0) {
+      atom->setProp(_rgroupInputDummy, true);
+      // clean any existing R group numbers
+      atom->setIsotope(0);
+      atom->setAtomMapNum(0);
+      if (atom->hasProp(common_properties::_MolFileRLabel)) {
+        atom->clearProp(common_properties::_MolFileRLabel);
+      }
+      atom->setProp(common_properties::dummyLabel, "*");
+    }
+  }
   int core_idx = 0;
   const RCore *rcore = nullptr;
   std::vector<MatchVectType> tmatches;
@@ -96,7 +108,8 @@ int RGroupDecomposition::add(const ROMol &inmol) {
 
   // Find the first matching core (onlyMatchAtRGroups)
   // or the first core that requires the smallest number
-  // of newly added labels
+  // of newly added labels and is a superstructure of
+  // the first matching core
   int global_min_heavy_nbrs = -1;
   SubstructMatchParameters sssparams(params().substructmatchParams);
   sssparams.uniquify = false;
@@ -185,8 +198,9 @@ int RGroupDecomposition::add(const ROMol &inmol) {
     if (!data->params.onlyMatchAtRGroups) {
       int min_heavy_nbrs = *std::min_element(tmatches_heavy_nbrs.begin(),
                                              tmatches_heavy_nbrs.end());
-      if (global_min_heavy_nbrs == -1 ||
-          min_heavy_nbrs < global_min_heavy_nbrs) {
+      if (!rcore || (min_heavy_nbrs < global_min_heavy_nbrs &&
+                     !SubstructMatch(*core.second.core, *rcore->core, sssparams)
+                          .empty())) {
         i = 0;
         tmatches_filtered.clear();
         for (const auto heavy_nbrs : tmatches_heavy_nbrs) {
@@ -275,17 +289,22 @@ int RGroupDecomposition::add(const ROMol &inmol) {
             unsigned int index =
                 at->getIsotope();  // this is the index into the core
             // it messes up when there are multiple ?
-            int rlabel;
-            auto coreAtom = rcore->core->getAtomWithIdx(index);
-            coreAtomAnyMatched.insert(index);
-            if (coreAtom->getPropIfPresent(RLABEL, rlabel)) {
-              std::vector<int> rlabelsOnSideChain;
-              at->getPropIfPresent(SIDECHAIN_RLABELS, rlabelsOnSideChain);
-              rlabelsOnSideChain.push_back(rlabel);
-              at->setProp(SIDECHAIN_RLABELS, rlabelsOnSideChain);
+            if (!at->hasProp(_rgroupInputDummy)) {
+              int rlabel;
+              auto coreAtom = rcore->core->getAtomWithIdx(index);
+              coreAtomAnyMatched.insert(index);
+              if (coreAtom->getPropIfPresent(RLABEL, rlabel)) {
+                std::vector<int> rlabelsOnSideChain;
+                at->getPropIfPresent(SIDECHAIN_RLABELS, rlabelsOnSideChain);
+                rlabelsOnSideChain.push_back(rlabel);
+                at->setProp(SIDECHAIN_RLABELS, rlabelsOnSideChain);
 
-              data->labels.insert(rlabel);  // keep track of all labels used
-              attachments.push_back(rlabel);
+                data->labels.insert(rlabel);  // keep track of all labels used
+                attachments.push_back(rlabel);
+              }
+            } else {
+              // restore input wildcard
+              at->clearProp(_rgroupInputDummy);
             }
           }
         }
@@ -434,7 +453,7 @@ RWMOL_SPTR RGroupDecomposition::outputCoreMolecule(
     if (atom->getAtomicNum()) {
       continue;
     }
-    auto label = atom->getAtomMapNum();
+    auto label = data->getRlabel(atom);
     Atom *nbrAtom = nullptr;
     for (const auto &nbri :
          boost::make_iterator_range(coreWithMatches->getAtomNeighbors(atom))) {

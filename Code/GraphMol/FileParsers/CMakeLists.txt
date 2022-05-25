@@ -58,7 +58,7 @@ rdkit_library(FileParsers
 							MultithreadedMolSupplier.cpp
 							MultithreadedSmilesMolSupplier.cpp
 							MultithreadedSDMolSupplier.cpp
-              LINK_LIBRARIES Depictor SmilesParse GraphMol ${RDK_MAEPARSER_LIBS} ${regex_lib} ${link_iostreams} ${zlib_lib})
+              LINK_LIBRARIES GenericGroups Depictor SmilesParse GraphMol ${RDK_MAEPARSER_LIBS} ${regex_lib} ${link_iostreams} ${zlib_lib})
 target_compile_definitions(FileParsers PRIVATE RDKIT_FILEPARSERS_BUILD)
 
 rdkit_headers(FileParsers.h
@@ -101,8 +101,8 @@ rdkit_test(testSequence testSequence.cpp LINK_LIBRARIES FileParsers )
 rdkit_test(testExtendedStereoParsing testExtendedStereoParsing.cpp
            LINK_LIBRARIES FileParsers )
 
-rdkit_catch_test(fileParsersCatchTest file_parsers_catch.cpp catch_main.cpp 
+rdkit_catch_test(fileParsersCatchTest file_parsers_catch.cpp 
            LINK_LIBRARIES FileParsers )
 
-rdkit_catch_test(testPropertyLists testPropertyLists.cpp catch_main.cpp 
+rdkit_catch_test(testPropertyLists testPropertyLists.cpp
            LINK_LIBRARIES FileParsers )

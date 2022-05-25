@@ -22,6 +22,14 @@
 #include <GraphMol/Fingerprints/Fingerprints.h>
 // #define VERBOSE
 
+#ifdef RDK_USE_BOOST_SERIALIZATION
+#include <RDGeneral/BoostStartInclude.h>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/archive_exception.hpp>
+#include <RDGeneral/BoostEndInclude.h>
+#endif
+
 #ifdef VERBOSE
 #include <GraphMol/SmilesParse/SmilesWrite.h>
 #endif
@@ -71,6 +79,14 @@ void removeTautomerDuplicates(std::vector<MatchVectType> &matches,
 
 namespace RDKit {
 
+bool TautomerQueryCanSerialize() {
+#ifdef RDK_USE_BOOST_SERIALIZATION
+  return true;
+#else
+  return false;
+#endif
+}
+
 class TautomerQueryMatcher {
  private:
   const TautomerQuery &d_tautomerQuery;
@@ -102,7 +118,9 @@ class TautomerQueryMatcher {
 #ifdef VERBOSE
           std::cout << "Got Match " << std::endl;
 #endif
-          if (d_matchingTautomers) d_matchingTautomers->push_back(tautomer);
+          if (d_matchingTautomers) {
+            d_matchingTautomers->push_back(tautomer);
+          }
         }
         return matchingTautomer;
       }
@@ -122,10 +140,6 @@ TautomerQuery::TautomerQuery(std::vector<ROMOL_SPTR> tautomers,
 
 TautomerQuery *TautomerQuery::fromMol(
     const ROMol &query, const std::string &tautomerTransformFile) {
-  auto tautomerFile = !tautomerTransformFile.empty()
-                          ? tautomerTransformFile
-                          : std::string(getenv("RDBASE")) +
-                                "/Data/MolStandardize/tautomerTransforms.in";
   auto tautomerParams = std::unique_ptr<MolStandardize::TautomerCatalogParams>(
       new MolStandardize::TautomerCatalogParams(tautomerTransformFile));
   MolStandardize::TautomerEnumerator tautomerEnumerator(
@@ -279,6 +293,35 @@ std::vector<MatchVectType> SubstructMatch(
     const ROMol &mol, const TautomerQuery &query,
     const SubstructMatchParameters &params) {
   return query.substructOf(mol, params);
+}
+
+void TautomerQuery::toStream(std::ostream &ss) const {
+#ifndef RDK_USE_BOOST_SERIALIZATION
+  PRECONDITION(0, "Boost SERIALIZATION is not enabled")
+#else
+  boost::archive::text_oarchive ar(ss);
+  ar << *this;
+#endif
+}
+
+std::string TautomerQuery::serialize() const {
+  std::stringstream ss;
+  toStream(ss);
+  return ss.str();
+}
+
+void TautomerQuery::initFromStream(std::istream &ss) {
+#ifndef RDK_USE_BOOST_SERIALIZATION
+  PRECONDITION(0, "Boost SERIALIZATION is not enabled")
+#else
+  boost::archive::text_iarchive ar(ss);
+  ar >> *this;
+#endif
+}
+
+void TautomerQuery::initFromString(const std::string &text) {
+  std::stringstream ss(text);
+  initFromStream(ss);
 }
 
 }  // namespace RDKit

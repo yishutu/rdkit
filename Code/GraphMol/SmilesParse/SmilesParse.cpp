@@ -64,8 +64,10 @@ int smarts_parse_helper(const std::string &inp,
   TEST_ASSERT(!yysmarts_lex_init(&scanner));
   try {
     size_t ltrim = setup_smarts_string(inp, scanner);
-    res = yysmarts_parse(inp.c_str() + ltrim, &molVect, atom, bond, scanner,
-                         start_tok);
+    unsigned numAtomsParsed = 0;
+    unsigned numBondsParsed = 0;
+    res = yysmarts_parse(inp.c_str() + ltrim, &molVect, atom, bond,
+                         numAtomsParsed, numBondsParsed, scanner, start_tok);
   } catch (...) {
     yysmarts_lex_destroy(scanner);
     throw;
@@ -225,6 +227,7 @@ RWMol *toMol(const std::string &inp,
     if (!molVect.empty()) {
       res = molVect[0];
       SmilesParseOps::CloseMolRings(res, false);
+      SmilesParseOps::CheckChiralitySpecifications(res, true);
       SmilesParseOps::SetUnspecifiedBondTypes(res);
       SmilesParseOps::AdjustAtomChiralityFlags(res);
       // No sense leaving this bookmark intact:
@@ -376,6 +379,7 @@ void handleCXPartAndName(RWMol *res, const T &params, const std::string &cxPart,
       res->setProp("_CXSMILES_Data", std::string(cxPart.cbegin(), pos));
     } else if (params.strictCXSMILES && !params.parseName &&
                pos != cxPart.cend()) {
+      delete res;
       throw RDKit::SmilesParseException(
           "CXSMILES extension does not start with | and parseName=false");
     }
@@ -437,7 +441,9 @@ RWMol *SmilesToMol(const std::string &smiles,
   }
 
   if (res) {
-    SmilesParseOps::CleanupAfterParsing(res);
+    if (!params.skipCleanup) {
+      SmilesParseOps::CleanupAfterParsing(res);
+    }
     if (!name.empty()) {
       res->setProp(common_properties::_Name, name);
     }
@@ -487,7 +493,9 @@ RWMol *SmartsToMol(const std::string &smarts,
       }
     }
     MolOps::setBondStereoFromDirections(*res);
-    SmilesParseOps::CleanupAfterParsing(res);
+    if (!params.skipCleanup) {
+      SmilesParseOps::CleanupAfterParsing(res);
+    }
     if (!name.empty()) {
       res->setProp(common_properties::_Name, name);
     }

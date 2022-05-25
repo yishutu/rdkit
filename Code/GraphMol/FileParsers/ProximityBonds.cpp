@@ -65,12 +65,8 @@ static bool IsBlacklistedAtom(Atom *atom) {
   // blacklist metals, noble gasses and halogens
   int elem = atom->getAtomicNum();
   // make an inverse query (non-metals and metaloids)
-  if ((5 <= elem && elem <= 8) || (14 <= elem && elem <= 16) ||
-      (32 <= elem && elem <= 34) || (51 <= elem && elem <= 52)) {
-    return false;
-  } else {
-    return true;
-  }
+  return !((5 <= elem && elem <= 8) || (14 <= elem && elem <= 16) ||
+           (32 <= elem && elem <= 34) || (51 <= elem && elem <= 52));
 }
 
 bool IsBlacklistedPair(Atom *beg_atom, Atom *end_atom) {
@@ -277,6 +273,7 @@ static bool StandardPDBDoubleBond(unsigned int rescode, unsigned int atm1,
   }
 
   switch (rescode) {
+    case BCNAM('A', 'C', 'E'):
     case BCNAM('A', 'L', 'A'):
     case BCNAM('C', 'Y', 'S'):
     case BCNAM('G', 'L', 'Y'):

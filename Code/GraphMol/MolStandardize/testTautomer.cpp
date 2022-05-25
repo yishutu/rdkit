@@ -374,15 +374,21 @@ void testEnumeratorParams() {
       << std::endl;
 
   // Test a structure with hundreds of tautomers.
-  std::string smi68 = "[H][C](CO)(NC(=O)C1=C(O)C(O)=CC=C1)C(O)=O";
+  std::string smi68 = "C(CO)(NC(=O)C1=C(O)C(O)=CC=C1)C(O)=O";
   ROMOL_SPTR m68(SmilesToMol(smi68));
 
   {
     TautomerEnumerator te;
     TautomerEnumeratorResult res68 = te.enumerate(*m68);
-    TEST_ASSERT(res68.size() == 292);
+    TEST_ASSERT(res68.status() == TautomerEnumeratorStatus::Completed);
+    TEST_ASSERT(res68.size() == 72);
+  }
+  {  // test v1 of the tautomerization parameters
+    std::unique_ptr<TautomerEnumerator> te(getV1TautomerEnumerator());
+    TautomerEnumeratorResult res68 = te->enumerate(*m68);
     TEST_ASSERT(res68.status() ==
                 TautomerEnumeratorStatus::MaxTransformsReached);
+    TEST_ASSERT(res68.size() == 292);
   }
   {
     CleanupParameters params;
@@ -570,6 +576,8 @@ void testEnumeratorCallback() {
   CleanupParameters params;
   params.maxTransforms = 10000;
   params.maxTautomers = 10000;
+  params.tautomerTransformData =
+      MolStandardize::defaults::defaultTautomerTransformsv1;
   {
     TautomerEnumerator te(params);
     te.setCallback(new MyTautomerEnumeratorCallback(50.0));
@@ -595,6 +603,7 @@ void testEnumeratorCallback() {
     TautomerEnumerator te(params);
     te.setCallback(new MyTautomerEnumeratorCallback(10000.0));
     TautomerEnumeratorResult res68 = te.enumerate(*m68);
+    std::cerr << res68.size() << std::endl;
     // either the enumeration completed
     // or it ran very slowly and was canceled due to timeout
     bool hasReachedTimeout =
@@ -611,6 +620,15 @@ void testEnumeratorCallback() {
     }
     TEST_ASSERT(hasReachedTimeout || hasCompleted);
     TEST_ASSERT(hasReachedTimeout ^ hasCompleted);
+  }
+  {
+    // GitHub #4736
+    TautomerEnumerator te(params);
+    te.setCallback(new MyTautomerEnumeratorCallback(50.0));
+    TautomerEnumeratorResult res68 = te.enumerate(*m68);
+    TautomerEnumerator teCopy(te);
+    TautomerEnumeratorResult res68Copy = teCopy.enumerate(*m68);
+    TEST_ASSERT(res68.status() == res68Copy.status());
   }
 
   BOOST_LOG(rdInfoLog) << "Finished" << std::endl;
@@ -1240,7 +1258,7 @@ void testTautomerEnumeratorResult_const_iterator() {
   TautomerEnumerator te;
   auto res = te.enumerate(*mol);
   TEST_ASSERT(res.status() == TautomerEnumeratorStatus::Completed);
-  TEST_ASSERT(res.size() == 12);
+  TEST_ASSERT(res.size() == 6);
   auto it = res.begin();
   auto it2 = res.begin();
   // Test semantic requirements of bidirectional_iterator
@@ -1339,6 +1357,7 @@ void testGithub3430() {
                    [](const ROMOL_SPTR &m) {
                      return TautomerScoringFunctions::scoreTautomer(*m);
                    });
+
     std::sort(scores.begin(), scores.end(), std::greater<int>());
     TEST_ASSERT(scores[1] < scores[0]);
   }
