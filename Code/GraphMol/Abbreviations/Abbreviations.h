@@ -26,8 +26,8 @@ struct RDKIT_ABBREVIATIONS_EXPORT AbbreviationDefinition {
   std::string displayLabel;
   std::string displayLabelW;
   std::string smarts;
-  std::shared_ptr<ROMol> mol;                  //! optional
-  std::vector<unsigned int> extraAttachAtoms;  //! optional
+  std::shared_ptr<ROMol> mol;                  //!< optional
+  std::vector<unsigned int> extraAttachAtoms;  //!< optional
   bool operator==(const AbbreviationDefinition& other) const {
     return label == other.label && displayLabel == other.displayLabel &&
            displayLabelW == other.displayLabelW && smarts == other.smarts;
@@ -54,7 +54,7 @@ namespace common_properties {
 RDKIT_ABBREVIATIONS_EXPORT extern const std::string numDummies;
 RDKIT_ABBREVIATIONS_EXPORT extern const std::string origAtomMapping;
 RDKIT_ABBREVIATIONS_EXPORT extern const std::string origBondMapping;
-}
+}  // namespace common_properties
 namespace Utils {
 //! returns the default set of abbreviation definitions
 RDKIT_ABBREVIATIONS_EXPORT std::vector<AbbreviationDefinition>

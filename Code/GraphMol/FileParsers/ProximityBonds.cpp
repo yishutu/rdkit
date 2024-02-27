@@ -228,7 +228,8 @@ static void ConnectTheDots_Large(RWMol *mol, unsigned int flags) {
         auto *n_info =
             (AtomPDBResidueInfo *)(mol->getAtomWithIdx(*nbr)->getMonomerInfo());
         if (d < best &&
-            atom_info->getResidueNumber() == n_info->getResidueNumber()) {
+            ((!atom_info || !n_info) ||
+             atom_info->getResidueNumber() == n_info->getResidueNumber())) {
           best = d;
           best_idx = *nbr;
         }
@@ -259,8 +260,10 @@ void ConnectTheDots(RWMol *mol, unsigned int flags) {
 }
 
 // These are macros to allow their use in C++ constants
-constexpr int BCNAM(char A, char B, char C) { return (A << 16) | (B << 8) | C; }
-constexpr int BCATM(char A, char B, char C, char D) {
+constexpr unsigned BCNAM(char A, char B, char C) {
+  return (A << 16) | (B << 8) | C;
+}
+constexpr unsigned BCATM(char A, char B, char C, char D) {
   return (A << 24) | (B << 16) | (C << 8) | D;
 }
 

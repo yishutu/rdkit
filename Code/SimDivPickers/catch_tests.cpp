@@ -8,7 +8,7 @@
 //  of the RDKit source tree.
 //
 
-#include "catch.hpp"
+#include <catch2/catch_all.hpp>
 #include <RDGeneral/types.h>
 #include <RDGeneral/test.h>
 #include <DataStructs/ExplicitBitVect.h>
@@ -68,7 +68,7 @@ TEST_CASE(
       }
     }
   }
-#ifdef RDK_THREADSAFE_SSS
+#ifdef RDK_BUILD_THREADSAFE_SSS
   SECTION("basics multithreaded") {
     double threshold = 0.8;
     RDKit::INT_VECT firstPicks;

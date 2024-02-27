@@ -8,11 +8,9 @@
 //  of the RDKit source tree.
 //
 
-#include <boost/tuple/tuple_comparison.hpp>
-
 #include <RDGeneral/Invariant.h>
 #include <RDGeneral/RDThreads.h>
-#ifdef RDK_THREADSAFE_SSS
+#ifdef RDK_BUILD_THREADSAFE_SSS
 #include <thread>
 #include <future>
 #endif
@@ -29,14 +27,14 @@ std::uint8_t *bitsetToBytes(const boost::dynamic_bitset<> &bitset);
 namespace {
 auto tplSorter = [](const MultiFPBReader::ResultTuple &v1,
                     const MultiFPBReader::ResultTuple &v2) {
-  if (v1.get<0>() == v2.get<0>()) {
-    if (v1.get<2>() == v2.get<2>()) {
-      return v1.get<1>() < v2.get<1>();
+  if (std::get<0>(v1) == std::get<0>(v2)) {
+    if (std::get<2>(v1) == std::get<2>(v2)) {
+      return std::get<1>(v1) < std::get<1>(v2);
     } else {
-      return v1.get<2>() < v2.get<2>();
+      return std::get<2>(v1) < std::get<2>(v2);
     }
   } else {
-    return v1.get<0>() > v2.get<0>();
+    return std::get<0>(v1) > std::get<0>(v2);
   }
 };
 
@@ -101,13 +99,13 @@ void generic_nbr_helper(std::vector<MultiFPBReader::ResultTuple> &res, T func,
   res.clear();
   res.resize(0);
   numThreads = getNumThreadsToUse(numThreads);
-#ifdef RDK_THREADSAFE_SSS
+#ifdef RDK_BUILD_THREADSAFE_SSS
   std::vector<std::future<void>> tg;
 #endif
   if (numThreads == 1) {
     func(0, 1, &args);
   }
-#ifdef RDK_THREADSAFE_SSS
+#ifdef RDK_BUILD_THREADSAFE_SSS
   else {
     for (unsigned int tid = 0; tid < numThreads && tid < args.readers.size();
          ++tid) {
@@ -163,7 +161,7 @@ void get_containing_nbrs(
     std::vector<std::pair<unsigned int, unsigned int>> &res,
     unsigned int numThreads, bool initOnSearch) {
   numThreads = getNumThreadsToUse(numThreads);
-#ifdef RDK_THREADSAFE_SSS
+#ifdef RDK_BUILD_THREADSAFE_SSS
   std::vector<std::future<void>> tg;
 #endif
 
@@ -171,7 +169,7 @@ void get_containing_nbrs(
   if (numThreads == 1) {
     contain_helper(0, 1, bv, &d_readers, &accum, initOnSearch);
   }
-#ifdef RDK_THREADSAFE_SSS
+#ifdef RDK_BUILD_THREADSAFE_SSS
   else {
     for (unsigned int tid = 0; tid < numThreads && tid < d_readers.size();
          ++tid) {

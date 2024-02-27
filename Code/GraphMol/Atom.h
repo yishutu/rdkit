@@ -27,6 +27,13 @@
 #include <GraphMol/details.h>
 
 namespace RDKit {
+class Atom;
+}
+//! allows Atom objects to be dumped to streams
+RDKIT_GRAPHMOL_EXPORT std::ostream &operator<<(std::ostream &target,
+                                               const RDKit::Atom &at);
+
+namespace RDKit {
 class ROMol;
 class RWMol;
 class AtomMonomerInfo;
@@ -69,6 +76,7 @@ class RDKIT_GRAPHMOL_EXPORT Atom : public RDProps {
   friend class MolPickler;  //!< the pickler needs access to our privates
   friend class ROMol;
   friend class RWMol;
+  friend std::ostream &(::operator<<)(std::ostream &target, const Atom &at);
 
  public:
   // FIX: grn...
@@ -94,11 +102,11 @@ class RDKIT_GRAPHMOL_EXPORT Atom : public RDProps {
     CHI_TETRAHEDRAL_CCW,  //!< tetrahedral: counter-clockwise rotation (SMILES
                           //\@)
     CHI_OTHER,            //!< some unrecognized type of chirality
-    CHI_TETRAHEDRAL,      //! tetrahedral, use permutation flag
-    CHI_ALLENE,           //! allene, use permutation flag
-    CHI_SQUAREPLANAR,     //! square planar, use permutation flag
-    CHI_TRIGONALBIPYRAMIDAL,  //! trigonal bipyramidal, use permutation flag
-    CHI_OCTAHEDRAL            //! octahedral, use permutation flag
+    CHI_TETRAHEDRAL,      //!< tetrahedral, use permutation flag
+    CHI_ALLENE,           //!< allene, use permutation flag
+    CHI_SQUAREPLANAR,     //!< square planar, use permutation flag
+    CHI_TRIGONALBIPYRAMIDAL,  //!< trigonal bipyramidal, use permutation flag
+    CHI_OCTAHEDRAL            //!< octahedral, use permutation flag
   } ChiralType;
 
   Atom();
@@ -201,6 +209,13 @@ class RDKIT_GRAPHMOL_EXPORT Atom : public RDProps {
       - requires an owning molecule
   */
   int getImplicitValence() const;
+
+  //! returns whether the atom has a valency violation or not
+  /*!
+    <b>Notes:</b>
+      - requires an owning molecule
+  */
+  bool hasValenceViolation() const;
 
   //! returns the number of radical electrons for this Atom
   /*!
@@ -441,6 +456,7 @@ RDKIT_GRAPHMOL_EXPORT void setSupplementalSmilesLabel(Atom *atom,
                                                       const std::string &label);
 RDKIT_GRAPHMOL_EXPORT std::string getSupplementalSmilesLabel(const Atom *atom);
 };  // namespace RDKit
+
 //! allows Atom objects to be dumped to streams
 RDKIT_GRAPHMOL_EXPORT std::ostream &operator<<(std::ostream &target,
                                                const RDKit::Atom &at);
